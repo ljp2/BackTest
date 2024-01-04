@@ -1,12 +1,26 @@
+import platform
 import pandas as pd
 from pandas import DataFrame as DF
+import numpy as np
+from datetime import datetime
+
+from utils import ExponentialSmoothing as ES
+
+class OHLC_bar:
+    def __init__(self, T, O, H, L, C, V=None) -> None:
+        data = {'T': [T], 'O': [O], 'H': [H], 'L': [L], 'C': [C], 'V': [V]}
+        df = DF(data)
+        df.set_index('T', inplace=True)
 
 class OHLC:
-    def __init__(self) -> None:
+    def __init__(self, x:any) -> None:
         self.ohlcbars = DF()
-        
-    def addBar(t, O, H, L, C, V):
-        pass
+
+    def addBar(self, t, O, H, L, C, V=None):
+        ohlcbar = OHLC_bar(t, O, H, L, C, V)
+        self.ohlcbars.append(ohlcbar)
+        return ohlcbar
+                                  
 
 class HA:
     def __init__(self) -> None:
@@ -66,3 +80,58 @@ class HA:
         )
         self.habars = pd.concat([self.habars, ha_bar])
         return ha_bar
+    
+
+class HAMA:
+    def __init__(self) -> None:
+        self.ha = HA()
+        self.ohlcbars = DF()
+        self.smooth_ohlcbars = DF()
+        self.hamabars = DF()
+        
+        self.periodOpen  = 3
+        self.periodHigh  = 3
+        self.periodLow  =  3
+        self.periodClose = 3
+        
+        # self.exOpen = ES(self.periodOpen)
+        self.exOpen = ES(length=3)
+        self.exHigh = ES(length=self.periodHigh)
+        self.exLow = ES(length=self.periodLow)
+        self.exClose = ES(length=self.periodClose)
+        
+        
+    def addBar(self, ohlcbar:DF):
+        self.ohlcbars = pd.concat([self.ohlcbars, ohlcbar])
+        O,H,L,C,_ = ohlcbar.iloc[0].values
+        nO = self.exOpen.update(O)
+        nH = self.exHigh.update(H)
+        nL = self.exLow.update(L)
+        nC = self.exClose.update(C)
+        smooth_olhc_bar =  pd.DataFrame([[nO,nH,nL,nC]], index=ohlcbar.index,  columns=["Open", "High", "Low", "Close"] )
+        new_hama_bar = self.ha.addBar(smooth_olhc_bar)
+        return new_hama_bar
+
+        
+
+if __name__ == "__main__":
+    import arrivals
+    barfilename = "20231130"
+    filedirectory = "~/Data" if platform.system() == "Darwin" else "c:/Data"
+    filepath = f"{filedirectory}/{barfilename}.csv"
+    df = pd.read_csv(filepath, index_col=0, parse_dates=True)
+    arrivals = arrivals.Arrivals(df)
+    hama = HAMA()
+
+    while arrivals.waitforarrival() is not None:
+        newbar = arrivals.arrival
+        o,h,l,c,_ = newbar.iloc[0].values
+        newhamabar = hama.addBar(newbar)
+        nO,nH,nL,nC = newhamabar.iloc[0].values
+        print(o,h,l,c)
+        print(nO,nH,nL,nC)
+        print()
+
+
+        
+   
