@@ -1,5 +1,9 @@
 import sys
+import os
+import platform
 import glob
+import pandas as pd
+
 from PyQt6.QtCore import QSize, Qt
 
 from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, \
@@ -8,6 +12,12 @@ from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, \
 class ChooseBarFile(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        
+        if platform.system() == "Darwin":
+            self.files_directory = "~Data"
+        else:
+            self.files_directory = "C:/Data/"
+        
         layout = QVBoxLayout()
         
         self.title_label = QLabel('Backtest Day')
@@ -16,8 +26,8 @@ class ChooseBarFile(QWidget):
         group_layout.addWidget(self.title_label, alignment=Qt.AlignmentFlag.AlignTop)
         
         self.comboBox = QComboBox()
-        files = ["None Selected"] + self.getBarFiles()
-        self.comboBox.addItems(files)
+        self.files = ["None Selected"] + self.getBarFiles()
+        self.comboBox.addItems(self.files)
         self.comboBox.currentIndexChanged.connect( self.index_changed )
         self.comboBox.currentTextChanged.connect( self.text_changed )
         
@@ -29,14 +39,19 @@ class ChooseBarFile(QWidget):
         self.setLayout(layout)
 
     def getBarFiles(self):
-        files = [s.split('/')[-1].split('.')[0] for s in  glob.glob("/Users/ljp2/Data/*.csv")]
+        files = glob.glob(f"{self.files_directory}/*.csv")
+        files = [file.replace("\\", "/") for file in files]
+        files = [s.split('/')[-1].split('.')[0] for s in files]  
         return files
-    
+        
     def index_changed(self, i): # i is an int
         print(i)
 
-    def text_changed(self, s): # s is a str
-        print(s)
+    def text_changed(self, filename:str): # s is a str
+        filepath = f"{self.files_directory}/{filename}.csv"
+        bars = pd.read_csv(filepath, index_col=0, parse_dates=True)
+        print(bars.head())
+        print(bars.tail)
 
 class MainWindow(QMainWindow):
 
