@@ -18,9 +18,8 @@ class Arrivals:
             return None
             # raise StopIteration
 
-    def waitforarrival(self, delay=None):
-        if delay is not None:
-            time.sleep(0.25)
+    def waitforarrival(self):
+        time.sleep(0.25)
         # input()
         self.arrival = next(self)
         return self.arrival

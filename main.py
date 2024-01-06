@@ -4,17 +4,21 @@ import platform
 import glob
 import pandas as pd
 
-from PyQt6.QtCore import QSize, Qt
-
+from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, \
     QLabel, QPushButton, QComboBox, QGroupBox, QSpacerItem, QSizePolicy
 
+import plot
+
 class ChooseBarFile(QWidget):
+    fileChangedEvent = pyqtSignal()
     def __init__(self, parent=None):
         super().__init__(parent)
         
+        self.bars = None
+        
         if platform.system() == "Darwin":
-            self.files_directory = "~Data"
+            self.files_directory = "/Users/ljp2/Data"
         else:
             self.files_directory = "C:/Data/"
         
@@ -47,25 +51,31 @@ class ChooseBarFile(QWidget):
     def index_changed(self, i): # i is an int
         print(i)
 
-    def text_changed(self, filename:str): # s is a str
-        filepath = f"{self.files_directory}/{filename}.csv"
-        bars = pd.read_csv(filepath, index_col=0, parse_dates=True)
-        print(bars.head())
-        print(bars.tail)
+    def text_changed(self, filename:str):
+        self.fileChangedEvent.emit()
+        # filepath = f"{self.files_directory}/{filename}.csv"
+        # self.bars = pd.read_csv(filepath, index_col=0, parse_dates=True)
+        # print(self.bars.head())
+        # print(self.bars.tail())
+        
+        # self.plot_process = plot.PlotProcess(self.bars)
+
 
 class MainWindow(QMainWindow):
 
     def __init__(self):
         super(MainWindow, self).__init__()
-        self.setMinimumSize(QSize(800,600))
+        self.setMinimumSize(QSize(200,100))
         self.setWindowTitle('BackTester')
         
         layout = QVBoxLayout()
         
         self.choose:ChooseBarFile = ChooseBarFile()
-        
+        # Connect the custom signal from the child to a slot in the parent
+        self.choose.fileChangedEvent.connect(self.handleFileChanged)
+
         self.button = QPushButton("Show Current File Name")
-        self.button.clicked.connect(self.clicked)
+        self.button.clicked.connect(self.showFileName)
         
         layout.addWidget(self.choose)
         layout.addWidget(self.button)
@@ -74,8 +84,11 @@ class MainWindow(QMainWindow):
         widget.setLayout(layout)
             
         self.setCentralWidget(widget)
+        
+    def showFileName(self):
+        print("Current File Name =", self.choose.comboBox.currentText())
 
-    def clicked(self):
+    def handleFileChanged(self):
         x = self.choose.comboBox.currentText()
         print('Current = ', x)
         
