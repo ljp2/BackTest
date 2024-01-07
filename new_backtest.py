@@ -15,6 +15,7 @@ from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+from matplotlib.widgets import MultiCursor, Cursor
 
 from ha import HA
 from hama import HAMA
@@ -101,21 +102,28 @@ class MyMainWindow(QMainWindow):
         self.layout.addWidget(self.canvas)
         self.layout.addWidget(NavigationToolbar(self.canvas, self))
         
-        (self.ax1, self.ax2) = self.figure.subplots(2, 1, sharex=True, sharey=True)
+        (self.ax1, self.ax2, self.ax3) = self.figure.subplots(3, 1, sharex=True, sharey=True)
         
         # Set titles
         self.figure.suptitle("BACKTESTING")
-        self.ax1.set_title("Candles")
-        self.ax2.set_title("HA")
-        self.ax1.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        self.ax2.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        self.ax1.yaxis.tick_right()
-        self.ax2.yaxis.tick_right()
         
+        self.ax1.set_title("Candles")
+        self.ax1.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+        self.ax1.yaxis.tick_right()
         self.ax1.set_xlim(self.x_left, self.x_right)
-        self.ax2.set_xlim(self.x_left, self.x_right)
         self.ax1.set_ylim(self.y_low, self.y_high)
+        
+        self.ax2.set_title("HA")
+        self.ax2.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+        self.ax2.yaxis.tick_right()
+        self.ax2.set_xlim(self.x_left, self.x_right)
         self.ax2.set_ylim(self.y_low, self.y_high)
+        
+        self.ax3.set_title("HAMA")
+        self.ax3.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+        self.ax3.yaxis.tick_right()
+        self.ax3.set_xlim(self.x_left, self.x_right)
+        self.ax3.set_ylim(self.y_low, self.y_high)
         
         layout_buttons = self.Buttons()
         
@@ -128,6 +136,12 @@ class MyMainWindow(QMainWindow):
         self.central_widget.setLayout(layout_h)
         
         self.setMinimumSize(800, 600)
+        
+        # self.cursor1 = Cursor(self.ax1, color='green', linewidth=2) 
+        # self.cursor2 = Cursor(self.ax2, color='green', linewidth=2) 
+        self.multi = MultiCursor(self.figure.canvas, 
+                (self.ax1, self.ax2, self.ax3), color='r', lw=1, 
+                horizOn=True, vertOn=True) 
         
     def Buttons(self) -> QVBoxLayout:
         layout_buttons = QVBoxLayout()
@@ -231,7 +245,7 @@ class MyMainWindow(QMainWindow):
         self.current_i += 1
         self.plotBar(bar, self.ax1)
         self.plotBar(habar, self.ax2)
-        self.plotBar(hamabar, self.ax1)
+        self.plotBar(hamabar, self.ax3)
         self.canvas.draw()
 
 
