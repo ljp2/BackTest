@@ -11,10 +11,10 @@ class HAMA:
         self.smooth_ohlcbars = DF()
         self.hamabars = DF()
         
-        self.periodOpen  = 3
-        self.periodHigh  = 3
-        self.periodLow  =  3
-        self.periodClose = 3
+        self.periodOpen  = 10
+        self.periodHigh  = 10
+        self.periodLow  =  10
+        self.periodClose = 10
         
         # self.exOpen = ES(self.periodOpen)
         self.exOpen = ES(length=3)
