@@ -2,7 +2,8 @@ import sys
 import platform
 import pandas as pd
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QSizePolicy,\
+    QSpacerItem, QWidget, QPushButton
 from PyQt6 import QtCore, QtWidgets
 
 import matplotlib
@@ -15,6 +16,18 @@ from matplotlib.figure import Figure
 
 from ha import HA
 
+class AnotherWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout()
+        self.next_button = QPushButton('Next Bar')
+        self.next_button.clicked.connect(self.handleNextButton)
+        layout.addWidget(self.next_button)
+        self.setLayout(layout)
+        
+    def handleNextButton(self):
+        print("NEXT BUTTON CLICKED")
+        
 class MyMainWindow(QMainWindow):
     def __init__(self, df):
         super().__init__()
@@ -40,11 +53,10 @@ class MyMainWindow(QMainWindow):
 
         self.width = (self.df.index[1] - self.df.index[0]) * 0.6
         self.width2 = self.width * 0.1
-        self.central_widget = QWidget(self)
-        self.setCentralWidget(self.central_widget)
-        self.layout = QVBoxLayout(self.central_widget)
+        
+        self.layout = QVBoxLayout()
 
-        self.figure = Figure()
+        self.figure = Figure(figsize=(800,600))
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.layout.addWidget(self.canvas)
         self.layout.addWidget(NavigationToolbar(self.canvas, self))
@@ -65,11 +77,24 @@ class MyMainWindow(QMainWindow):
         self.ax1.set_ylim(self.y_low, self.y_high)
         self.ax2.set_ylim(self.y_low, self.y_high)
         
-        self.button = QPushButton("Push for Window")
+        layout_buttons = QVBoxLayout()
+        self.button = QPushButton("Next Bar")
         self.button.clicked.connect(self.handleNextBar)
-        self.layout.addWidget(self.button)
+        layout_buttons.addWidget(self.button)
+        spacer_item = QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        layout_buttons.addItem(spacer_item)
 
+        layout_h = QHBoxLayout()
+        layout_h.addLayout(self.layout)
+        layout_h.addLayout(layout_buttons)
+            
+        self.central_widget = QWidget(self)
+        self.setCentralWidget(self.central_widget)
+        self.central_widget.setLayout(layout_h)
+        
+        self.setMinimumSize(800, 600)
 
+        
     def plotBar(self, bardf: pd.DataFrame, ax:Axes):
         """Plots the bar directory on the candles (the upper) subplot
 
@@ -136,6 +161,10 @@ class MyMainWindow(QMainWindow):
         self.plotBar(habar, self.ax2)
         self.canvas.draw()
 
+
+
+        
+        
 if __name__ == '__main__':
     barfilename = "20231130"
     filedirectory = "~/Data" if platform.system() == "Darwin" else "c:/Data"
