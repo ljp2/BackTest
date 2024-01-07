@@ -57,17 +57,12 @@ class ChooseBarFile(QWidget):
         files = [s.split('/')[-1].split('.')[0] for s in files]  
         return files
         
-    def index_changed(self, i): # i is an int
-        print(i)
+    def index_changed(self, i): 
+        pass
 
     def text_changed(self, filename:str):
-        self.fileChangedEvent.emit()
-        # filepath = f"{self.files_directory}/{filename}.csv"
-        # self.bars = pd.read_csv(filepath, index_col=0, parse_dates=True)
-        # print(self.bars.head())
-        # print(self.bars.tail())
+        print("Selected", filename)
         
-        # self.plot_process = plot.PlotProcess(self.bars)
 
 
 class MyMainWindow(QMainWindow):
@@ -234,7 +229,6 @@ class MyMainWindow(QMainWindow):
         habar = self.habars.addBar(bar)
         hamabar = self.hamabars.addBar(bar)
         self.current_i += 1
-        # print(bar)
         self.plotBar(bar, self.ax1)
         self.plotBar(habar, self.ax2)
         self.plotBar(hamabar, self.ax1)

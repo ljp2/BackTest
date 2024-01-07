@@ -7,7 +7,7 @@ class ExponentialSmoothing:
             self.alpha = 2.0 / (length + 1)
         else:
             self.alpha = alpha
-        print(self.alpha)
+        # print(self.alpha)
         self.smoothed_data = []
         self.new_smoothed_value = None
 

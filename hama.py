@@ -33,25 +33,3 @@ class HAMA:
         smooth_olhc_bar =  pd.DataFrame([[nO,nH,nL,nC]], index=ohlcbar.index,  columns=["Open", "High", "Low", "Close"] )
         new_hama_bar = self.ha.addBar(smooth_olhc_bar)
         return new_hama_bar
-
-        
-
-if __name__ == "__main__":
-    import arrivals
-    barfilename = "20231130"
-    filedirectory = "~/Data" if platform.system() == "Darwin" else "c:/Data"
-    filepath = f"{filedirectory}/{barfilename}.csv"
-    df = pd.read_csv(filepath, index_col=0, parse_dates=True)
-    arrivals = arrivals.Arrivals(df)
-    hama = HAMA()
-
-    while arrivals.waitforarrival() is not None:
-        newbar = arrivals.arrival
-        o,h,l,c,_ = newbar.iloc[0].values
-        newhamabar = hama.addBar(newbar)
-        nO,nH,nL,nC = newhamabar.iloc[0].values
-        print(o,h,l,c)
-        print(nO,nH,nL,nC)
-
-        
-   
