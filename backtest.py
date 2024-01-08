@@ -22,7 +22,7 @@ from hama import HAMA
 from utils import ChooseBarFile, DraggableLines, CrossHairCursor
 
 
-class MyMainWindow(QMainWindow):
+class BackTestWindow(QWidget):
     def __init__(self, df):
         super().__init__()
         
@@ -87,19 +87,17 @@ class MyMainWindow(QMainWindow):
         self.buttons_layout = self.Buttons()
         
         
-        layout = QHBoxLayout()
-        child_widget = QWidget()
-        
-        button = QPushButton("Click me!")
-        button.clicked.connect(self.onButtonClick)
-        layout.addWidget(button)  # Add the button to the layout
+        layout = QHBoxLayout()      
+        # button = QPushButton("Click me!")
+        # button.clicked.connect(self.onButtonClick)
+        # layout.addWidget(button)  # Add the button to the layout
         
         buttons_layout = self.Buttons()
-        # layout.addLayout(self.fig_layout)
-        # layout.addLayout(buttons_layout)
-        child_widget.setLayout(layout)
+        layout.addLayout(self.fig_layout)
+        layout.addLayout(buttons_layout)
+            
+        self.setLayout(layout)
         
-        self.setCentralWidget(child_widget)
         
         # self.setMinimumSize(800, 600)
         
@@ -164,14 +162,6 @@ class MyMainWindow(QMainWindow):
         spacer_item = QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         layout_buttons.addItem(spacer_item)
         return layout_buttons
-
-    def keyPressEvent(self, event):
-        modifiers = event.modifiers()
-        # Example: Handling the key event in the main window
-        if modifiers == Qt.KeyboardModifier.ControlModifier and event.key() == Qt.Key.Key_Q:
-            print("Ctrl + Q pressed. Quitting application.")
-            self.close()
-            
             
     def handleRedraw(self):
         print("REDRAW CLICKED")
@@ -268,7 +258,7 @@ class MyMainWindow(QMainWindow):
             self.canvas.draw()
 
     def keyPressEvent(self, event):
-        if event.key() == 32:
+        if event.key() == Qt.Key.Key_C:
             self.crosshair_1.toggle_crosshair()
         
 if __name__ == '__main__':
@@ -279,6 +269,6 @@ if __name__ == '__main__':
     
     
     app = QApplication(sys.argv)
-    main_window = MyMainWindow(df)
+    main_window = BackTestWindow(df)
     main_window.show()
     sys.exit(app.exec())
