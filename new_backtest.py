@@ -113,6 +113,23 @@ class MyMainWindow(QMainWindow):
         self.next_button.clicked.connect(self.handleNextBar)
         layout_buttons.addWidget(self.next_button)
         
+        self.buttons = {}
+        for n in [5,10,20,30]:
+            btn_label = f"Next {n} Bars"
+            self.buttons[n] = QPushButton(btn_label)
+            layout_buttons.addWidget(self.buttons[n])
+            match n:
+                case 5:
+                    self.buttons[5].clicked.connect(lambda : self.nextBars(5))
+                case 10:
+                    self.buttons[10].clicked.connect(lambda : self.nextBars(10))
+                case 20 :
+                    self.buttons[20].clicked.connect(lambda : self.nextBars(20))
+                case 30 :
+                    self.buttons[30].clicked.connect(lambda : self.nextBars(30))
+                case default:
+                    return None
+            
         self.toggle_cross_button = QPushButton("Toggle Crosshair")
         self.toggle_cross_button.clicked.connect(self.handleToggleCrosshair)
         layout_buttons.addWidget(self.toggle_cross_button)
@@ -219,20 +236,18 @@ class MyMainWindow(QMainWindow):
         self.canvas.draw()
         
     def handleNextBar(self, e):
-        bar = self.df.iloc[[self.current_i]]
-        habar = self.habars.addBar(bar)
-        hamabar = self.hamabars.addBar(bar)
-        self.current_i += 1
-        self.plotBar(bar, self.ax1)
-        self.plotBar(habar, self.ax2)
-        self.plotBar(hamabar, self.ax3)
-        self.canvas.draw()
+        self.nextBars(1)
 
-    def keyPressEvent(self, event):
-        
-        # Handle the key press event
-        key = event.key()
-        print(f'Key pressed: {key}')
+    def nextBars(self, n:int):
+        for i in range(n):
+            bar = self.df.iloc[[self.current_i]]
+            habar = self.habars.addBar(bar)
+            hamabar = self.hamabars.addBar(bar)
+            self.current_i += 1
+            self.plotBar(bar, self.ax1)
+            self.plotBar(habar, self.ax2)
+            self.plotBar(hamabar, self.ax3)
+            self.canvas.draw()
 
     def keyPressEvent(self, event):
         if event.key() == 32:

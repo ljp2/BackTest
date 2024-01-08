@@ -39,7 +39,8 @@ class ChooseBarFile(QWidget):
         group_layout.addWidget(self.comboBox, alignment=Qt.AlignmentFlag.AlignTop)
         
         layout.addWidget(group_box)
-        spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        # spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum)
         layout.addItem(spacer)
         self.setLayout(layout)
 
