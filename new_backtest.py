@@ -1,5 +1,4 @@
 import sys
-import glob
 import platform
 import pandas as pd
 
@@ -16,54 +15,12 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import MultiCursor, Cursor
+from matplotlib.lines import Line2D
 
 from ha import HA
 from hama import HAMA
+from utils import ChooseBarFile, DraggableLines, CrossHairCursor
 
-class ChooseBarFile(QWidget):
-    fileChangedEvent = pyqtSignal()
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        
-        self.bars = None
-        
-        if platform.system() == "Darwin":
-            self.files_directory = "/Users/ljp2/Data"
-        else:
-            self.files_directory = "C:/Data/"
-        
-        layout = QVBoxLayout()
-        
-        self.title_label = QLabel('Backtest Day')
-        group_box = QGroupBox()
-        group_layout = QVBoxLayout(group_box)
-        group_layout.addWidget(self.title_label, alignment=Qt.AlignmentFlag.AlignTop)
-        
-        self.comboBox = QComboBox()
-        self.files = ["None Selected"] + self.getBarFiles()
-        self.comboBox.addItems(self.files)
-        self.comboBox.currentIndexChanged.connect( self.index_changed )
-        self.comboBox.currentTextChanged.connect( self.text_changed )
-        
-        group_layout.addWidget(self.comboBox, alignment=Qt.AlignmentFlag.AlignTop)
-        
-        layout.addWidget(group_box)
-        spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        layout.addItem(spacer)
-        self.setLayout(layout)
-
-    def getBarFiles(self):
-        files = glob.glob(f"{self.files_directory}/*.csv")
-        files = [file.replace("\\", "/") for file in files]
-        files = [s.split('/')[-1].split('.')[0] for s in files]  
-        return files
-        
-    def index_changed(self, i): 
-        pass
-
-    def text_changed(self, filename:str):
-        print("Selected", filename)
-        
 
 
 class MyMainWindow(QMainWindow):
@@ -103,7 +60,7 @@ class MyMainWindow(QMainWindow):
         self.layout.addWidget(NavigationToolbar(self.canvas, self))
         
         (self.ax1, self.ax2, self.ax3) = self.figure.subplots(3, 1, sharex=True, sharey=True)
-        
+   
         # Set titles
         self.figure.suptitle("BACKTESTING")
         
@@ -112,12 +69,15 @@ class MyMainWindow(QMainWindow):
         self.ax1.yaxis.tick_right()
         self.ax1.set_xlim(self.x_left, self.x_right)
         self.ax1.set_ylim(self.y_low, self.y_high)
+        self.draggable_lines_1 = DraggableLines(self.ax1, self.getHorizLineCreateFlag)
+        self.crosshair_1 = CrossHairCursor(self.ax1)
         
         self.ax2.set_title("HA")
         self.ax2.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
         self.ax2.yaxis.tick_right()
         self.ax2.set_xlim(self.x_left, self.x_right)
         self.ax2.set_ylim(self.y_low, self.y_high)
+        # self.draggable_lines_2 = DraggableLines(self.ax2, self.getHorizLineCreateFlag)
         
         self.ax3.set_title("HAMA")
         self.ax3.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
@@ -139,9 +99,9 @@ class MyMainWindow(QMainWindow):
         
         # self.cursor1 = Cursor(self.ax1, color='green', linewidth=2) 
         # self.cursor2 = Cursor(self.ax2, color='green', linewidth=2) 
-        self.multi = MultiCursor(self.figure.canvas, 
-                (self.ax1, self.ax2, self.ax3), color='r', lw=1, 
-                horizOn=True, vertOn=True) 
+        # self.multi = MultiCursor(self.figure.canvas, 
+        #         (self.ax1, self.ax2, self.ax3), color='r', lw=1, 
+        #         horizOn=True, vertOn=True) 
         
     def Buttons(self) -> QVBoxLayout:
         layout_buttons = QVBoxLayout()
@@ -153,17 +113,26 @@ class MyMainWindow(QMainWindow):
         self.next_button.clicked.connect(self.handleNextBar)
         layout_buttons.addWidget(self.next_button)
         
+        self.toggle_cross_button = QPushButton("Toggle Crosshair")
+        self.toggle_cross_button.clicked.connect(self.handleToggleCrosshair)
+        layout_buttons.addWidget(self.toggle_cross_button)
+        
         self.redraw_button = QPushButton("Redraw")
-        self.redraw_button.clicked.connect(self.handleShowHama)
+        self.redraw_button.clicked.connect(self.handleRedraw)
         layout_buttons.addWidget(self.redraw_button)
         
         self.buy_button = QPushButton("BUY")
-        self.buy_button.clicked.connect(self.handleShowHama)
+        self.buy_button.clicked.connect(self.handleBuy)
         layout_buttons.addWidget(self.buy_button)
         
         self.sell_button = QPushButton("SELL")
-        self.sell_button.clicked.connect(self.handleShowHama)
+        self.sell_button.clicked.connect(self.handleSell)
         layout_buttons.addWidget(self.sell_button)
+        
+        self.hline_button = QPushButton("Horiz Line")
+        self.horiz_line_create = False
+        self.hline_button.clicked.connect(self.handleCreateHLine)
+        layout_buttons.addWidget(self.hline_button)
         
         spacer_item = QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         layout_buttons.addItem(spacer_item)
@@ -172,14 +141,25 @@ class MyMainWindow(QMainWindow):
     def handleRedraw(self):
         print("REDRAW CLICKED")
         
-    def handleShowHama(self):
-        print("SHOW HAMA CLICKED")
-        
     def handleBuy(self):
         print("BUY CLICKED")
         
     def handleSell(self):
         print("SELL CLICKED")
+        
+    def handleCreateHLine(self):
+        self.horiz_line_create = not self.horiz_line_create
+        if self.horiz_line_create:
+            self.hline_button.setStyleSheet("background-color: red;")
+        else:
+            self.hline_button.setStyleSheet("")
+        
+    def getHorizLineCreateFlag(self):
+        return self.horiz_line_create
+        
+    def handleToggleCrosshair(self):
+        print("TOGGLE CROSSHAIR")
+        self.crosshair_1.toggle_crosshair()
         
     def plotBar(self, bardf: pd.DataFrame, ax:Axes):
         """Plots the bar directory on the candles (the upper) subplot
@@ -248,9 +228,15 @@ class MyMainWindow(QMainWindow):
         self.plotBar(hamabar, self.ax3)
         self.canvas.draw()
 
-
-
+    def keyPressEvent(self, event):
         
+        # Handle the key press event
+        key = event.key()
+        print(f'Key pressed: {key}')
+
+    def keyPressEvent(self, event):
+        if event.key() == 32:
+            self.crosshair_1.toggle_crosshair()
         
 if __name__ == '__main__':
     barfilename = "20231130"
