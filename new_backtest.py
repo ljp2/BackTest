@@ -69,6 +69,7 @@ class MyMainWindow(QMainWindow):
         self.ax1.yaxis.tick_right()
         self.ax1.set_xlim(self.x_left, self.x_right)
         self.ax1.set_ylim(self.y_low, self.y_high)
+        self.ax1.grid(True, linestyle='--', color='gray', alpha=0.7)
         self.draggable_lines_1 = DraggableLines(self.ax1, self.getHorizLineCreateFlag)
         self.crosshair_1 = CrossHairCursor(self.ax1)
         
@@ -77,6 +78,7 @@ class MyMainWindow(QMainWindow):
         self.ax2.yaxis.tick_right()
         self.ax2.set_xlim(self.x_left, self.x_right)
         self.ax2.set_ylim(self.y_low, self.y_high)
+        self.ax2.grid(True, linestyle='--', color='gray', alpha=0.7)
         # self.draggable_lines_2 = DraggableLines(self.ax2, self.getHorizLineCreateFlag)
         
         self.ax3.set_title("HAMA")
@@ -84,6 +86,7 @@ class MyMainWindow(QMainWindow):
         self.ax3.yaxis.tick_right()
         self.ax3.set_xlim(self.x_left, self.x_right)
         self.ax3.set_ylim(self.y_low, self.y_high)
+        self.ax3.grid(True, linestyle='--', color='gray', alpha=0.7)
         
         layout_buttons = self.Buttons()
         
