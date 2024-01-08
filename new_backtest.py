@@ -56,13 +56,17 @@ class MyMainWindow(QMainWindow):
 
         self.figure = Figure(figsize=(800,600))
         self.canvas = FigureCanvasQTAgg(self.figure)
-        self.layout.addWidget(self.canvas)
+        self.layout.addWidget(self.canvas, stretch=1)
         self.layout.addWidget(NavigationToolbar(self.canvas, self))
         
+        
         (self.ax1, self.ax2, self.ax3) = self.figure.subplots(3, 1, sharex=True, sharey=True)
-   
+        self.figure.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95, hspace=0.2)
+        
         # Set titles
-        self.figure.suptitle("BACKTESTING")
+        self.figure.suptitle("")
+        # self.figure.tight_layout()
+        self.figure.set_facecolor('#e6e6e6')
         
         self.ax1.set_title("Candles")
         self.ax1.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
