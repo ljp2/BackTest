@@ -28,8 +28,9 @@ from utils import getLatestDataFile
 import utils
 
 class BarPlotsFigure(QWidget):
-    def __init__(self, setup_df:pd.DataFrame):
+    def __init__(self, parent, setup_df:pd.DataFrame):
         super().__init__()
+        self.parent = parent
         self.df = setup_df
         self.bars = pd.DataFrame()
         self.habars = HA()
@@ -74,7 +75,7 @@ class BarPlotsFigure(QWidget):
         self.ax1.set_xlim(self.x_left, self.x_right)
         self.ax1.set_ylim(self.y_low, self.y_high)
         self.ax1.grid(True, linestyle='--', color='gray', alpha=0.7)
-        # self.draggable_lines_1 = DraggableLines(self.ax1, self.buttons_layout.getHorizLineCreateFlag)
+        self.draggable_lines_1 = DraggableLines(self.ax1, self.parent.getHorizLineCreateFlag)
         self.crosshair_1 = CrossHairCursor(self.ax1)
         
         self.ax2.set_title("HA")
@@ -170,13 +171,13 @@ class Buttons(QWidget):
             layout_buttons.addWidget(self.buttons[n])
             match n:
                 case 5:
-                    self.buttons[5].clicked.connect(lambda : self.bar_plots.nextBars(5))
+                    self.buttons[5].clicked.connect(lambda : self.parent.bar_plots.nextBars(5))
                 case 10:
-                    self.buttons[10].clicked.connect(lambda : self.bar_plots.nextBars(10))
+                    self.buttons[10].clicked.connect(lambda : self.parent.bar_plots.nextBars(10))
                 case 20 :
-                    self.buttons[20].clicked.connect(lambda : self.bar_plots.nextBars(20))
+                    self.buttons[20].clicked.connect(lambda : self.parent.bar_plots.nextBars(20))
                 case 30 :
-                    self.buttons[30].clicked.connect(lambda : self.bar_plots.nextBars(30))
+                    self.buttons[30].clicked.connect(lambda : self.parent.bar_plots.nextBars(30))
                 case default:
                     return None
             
@@ -217,7 +218,8 @@ class BackTestWindow(QWidget):
         self.habars = HA()
         self.hamabars = HAMA()
         
-        self.bar_plots = BarPlotsFigure(self.df)
+        self.horiz_line_create = False
+        self.bar_plots = BarPlotsFigure(self, self.df)
         
         self.buttons = Buttons(self)
         self.status = StatusWidget()       
@@ -242,15 +244,14 @@ class BackTestWindow(QWidget):
     def handleCreateHLine(self):
         self.horiz_line_create = not self.horiz_line_create
         if self.horiz_line_create:
-            self.hline_button.setStyleSheet("background-color: red;")
+            self.buttons.hline_button.setStyleSheet("background-color: red;")
         else:
-            self.hline_button.setStyleSheet("")
+            self.buttons.hline_button.setStyleSheet("")
         
     def getHorizLineCreateFlag(self):
         return self.horiz_line_create
         
     def handleToggleCrosshair(self):
-        print("TOGGLE CROSSHAIR")
         self.bar_plots.crosshair_1.toggle_crosshair()
              
     def handleNextBar(self, e):
@@ -270,7 +271,7 @@ class BackTestWindow(QWidget):
         self.cmd_layout.removeWidget(self.buttons)
         
         
-        self.buttons = Buttons()
+        self.buttons = Buttons(self)
         self.bar_plots.canvas.draw_idle()
         
         
