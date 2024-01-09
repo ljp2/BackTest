@@ -1,5 +1,6 @@
 import sys
 import platform
+import glob
 import pandas as pd
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QSizePolicy,\
@@ -19,21 +20,67 @@ from matplotlib.lines import Line2D
 
 from ha import HA
 from hama import HAMA
-from utils import ChooseBarFile, DraggableLines, CrossHairCursor
+from utils import DraggableLines, CrossHairCursor
 from scorewidget import ScoreWidget
 
+class ChooseBarFile(QWidget):
+    fileChangedEvent = pyqtSignal()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.bars = None
+        
+        if platform.system() == "Darwin":
+            self.files_directory = "/Users/ljp2/Data"
+        else:
+            self.files_directory = "C:/Data/"
+        
+        layout = QVBoxLayout()
+        
+        self.title_label = QLabel('Backtest Day')
+        group_box = QGroupBox()
+        group_layout = QVBoxLayout(group_box)
+        group_layout.addWidget(self.title_label, alignment=Qt.AlignmentFlag.AlignTop)
+        
+        self.comboBox = QComboBox()
+        self.files = ["None Selected"] + self.getBarFiles()
+        self.comboBox.addItems(self.files)
+        self.comboBox.currentIndexChanged.connect( self.index_changed )
+        self.comboBox.currentTextChanged.connect( self.text_changed )
+        
+        group_layout.addWidget(self.comboBox, alignment=Qt.AlignmentFlag.AlignTop)
+        
+        layout.addWidget(group_box)
+        # spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        # spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum)
+        # layout.addItem(spacer)
+        self.setLayout(layout)
+
+    def getBarFiles(self):
+        files = glob.glob(f"{self.files_directory}/*.csv")
+        files = [file.replace("\\", "/") for file in files]
+        files = [s.split('/')[-1].split('.')[0] for s in files]  
+        return files
+        
+    def index_changed(self, i): 
+        pass
+
+    def text_changed(self, filename:str):
+        print("Selected in Choose", filename)
+        self.parent.dataFileSelected(filename)
+        
 
 class BackTestWindow(QWidget):
-    def __init__(self, df):
+    def __init__(self, setup_df:pd.DataFrame):
         super().__init__()
         
-        self.df = df
+        self.df = setup_df
         self.bars = pd.DataFrame()
         self.habars = HA()
         self.hamabars = HAMA()
         
         self.current_i = 0
-        self.i_last = len(df) - 1
+        self.i_last = len(self.df) - 1
         self.i_left = 0
         self.i_width = 389
         self.i_plot_shift_delta = 5
@@ -92,21 +139,16 @@ class BackTestWindow(QWidget):
         button_score_layout.addLayout(self.buttons_layout)
         button_score_layout.addWidget(self.status_widget)
         
-        layout = QHBoxLayout()      
-        buttons_layout = self.Buttons()
+        layout = QHBoxLayout()
+    
         layout.addLayout(self.fig_layout)
-        layout.addLayout(button_score_layout)
+        
+        cmd_layout = QVBoxLayout()  
+        buttons_layout = self.Buttons()
+        cmd_layout.addLayout(button_score_layout)
+        layout.addLayout(cmd_layout)
             
         self.setLayout(layout)
-        
-        
-        # self.setMinimumSize(800, 600)
-        
-        # self.cursor1 = Cursor(self.ax1, color='green', linewidth=2) 
-        # self.cursor2 = Cursor(self.ax2, color='green', linewidth=2) 
-        # self.multi = MultiCursor(self.figure.canvas, 
-        #         (self.ax1, self.ax2, self.ax3), color='r', lw=1, 
-        #         horizOn=True, vertOn=True) 
         
     
     def onButtonClick(self):

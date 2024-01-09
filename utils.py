@@ -1,5 +1,7 @@
 import platform
 import sys
+import os
+import math
 import glob
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,50 +14,50 @@ from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 
-class ChooseBarFile(QWidget):
-    fileChangedEvent = pyqtSignal()
-    def __init__(self, parent=None):
-        super().__init__(parent)
+# class ChooseBarFile(QWidget):
+#     fileChangedEvent = pyqtSignal()
+#     def __init__(self, parent=None):
+#         super().__init__(parent)
         
-        self.bars = None
+#         self.bars = None
         
-        if platform.system() == "Darwin":
-            self.files_directory = "/Users/ljp2/Data"
-        else:
-            self.files_directory = "C:/Data/"
+#         if platform.system() == "Darwin":
+#             self.files_directory = "/Users/ljp2/Data"
+#         else:
+#             self.files_directory = "C:/Data/"
         
-        layout = QVBoxLayout()
+#         layout = QVBoxLayout()
         
-        self.title_label = QLabel('Backtest Day')
-        group_box = QGroupBox()
-        group_layout = QVBoxLayout(group_box)
-        group_layout.addWidget(self.title_label, alignment=Qt.AlignmentFlag.AlignTop)
+#         self.title_label = QLabel('Backtest Day')
+#         group_box = QGroupBox()
+#         group_layout = QVBoxLayout(group_box)
+#         group_layout.addWidget(self.title_label, alignment=Qt.AlignmentFlag.AlignTop)
         
-        self.comboBox = QComboBox()
-        self.files = ["None Selected"] + self.getBarFiles()
-        self.comboBox.addItems(self.files)
-        self.comboBox.currentIndexChanged.connect( self.index_changed )
-        self.comboBox.currentTextChanged.connect( self.text_changed )
+#         self.comboBox = QComboBox()
+#         self.files = ["None Selected"] + self.getBarFiles()
+#         self.comboBox.addItems(self.files)
+#         self.comboBox.currentIndexChanged.connect( self.index_changed )
+#         self.comboBox.currentTextChanged.connect( self.text_changed )
         
-        group_layout.addWidget(self.comboBox, alignment=Qt.AlignmentFlag.AlignTop)
+#         group_layout.addWidget(self.comboBox, alignment=Qt.AlignmentFlag.AlignTop)
         
-        layout.addWidget(group_box)
-        # spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        # spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum)
-        # layout.addItem(spacer)
-        self.setLayout(layout)
+#         layout.addWidget(group_box)
+#         # spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+#         # spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum)
+#         # layout.addItem(spacer)
+#         self.setLayout(layout)
 
-    def getBarFiles(self):
-        files = glob.glob(f"{self.files_directory}/*.csv")
-        files = [file.replace("\\", "/") for file in files]
-        files = [s.split('/')[-1].split('.')[0] for s in files]  
-        return files
+#     def getBarFiles(self):
+#         files = glob.glob(f"{self.files_directory}/*.csv")
+#         files = [file.replace("\\", "/") for file in files]
+#         files = [s.split('/')[-1].split('.')[0] for s in files]  
+#         return files
         
-    def index_changed(self, i): 
-        pass
+#     def index_changed(self, i): 
+#         pass
 
-    def text_changed(self, filename:str):
-        print("Selected", filename)
+#     def text_changed(self, filename:str):
+#         print("Selected", filename)
         
 
 class ToggleButton(Button):
@@ -202,3 +204,40 @@ class CrossHairCursor():
         self.vline.set_visible(self.crosshair_visible)
         self.ax.figure.canvas.draw_idle()
  
+def getDataDirectory():
+    if platform.system() == "Darwin":
+        home_directory = os.path.expanduser("~")
+        file_directory = os.path.join(home_directory, "Data") 
+    else:
+        filedirfile_directoryectory = "c:/Data"
+    return file_directory
+    
+def getLatestDataFile():
+    directory_path = getDataDirectory()
+    csv_files = csv_files = glob.glob(os.path.join(directory_path, '*.csv'))
+    latest_data_filename = max(csv_files, key=lambda x: os.path.basename(x))
+    return latest_data_filename
+
+def getLowHighLimits(filepath:str):
+    df = pd.read_csv(filepath, index_col=0, parse_dates=True)
+    high = df['High'].max()
+    low = df['Low'].min()
+    return (low, high)
+
+def getRoundedLowHighLimits(filepath:str, multiple:float):
+    low, high = getLowHighLimits(filepath=filepath)
+    rlow = round(low / multiple) * multiple - multiple
+    rhigh = round(high / multiple) * multiple
+    return (rlow, rhigh)
+
+if __name__ == "__main__":
+    lf = getLatestDataFile()
+    print(lf)
+    print(lf.split('/')[-1])
+
+    low,high = getLowHighLimits(lf)
+    print(low, high)
+    
+    rlow, rhigh = getRoundedLowHighLimits(lf, 5)
+    print(rlow, rhigh)   
+    
