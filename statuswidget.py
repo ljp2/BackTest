@@ -51,7 +51,7 @@ class LabelValue(QWidget):
             self.val.setStyleSheet("color: black;")
         self.val.setText(str(val))
 
-class ScoreWidget(QWidget):
+class StatusWidget(QWidget):
     def __init__(self):
         super().__init__()
 
@@ -65,7 +65,7 @@ class ScoreWidget(QWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    sw = ScoreWidget()
+    sw = StatusWidget()
     
     sw.day_pl.setValue(3.45)
     sw.position.setValue(-100)

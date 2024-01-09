@@ -2,13 +2,11 @@ import sys
 import platform
 import glob
 import pandas as pd
-from multiprocessing import Process
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QSizePolicy,\
     QSpacerItem, QWidget, QPushButton, QComboBox, QGroupBox, QLabel
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtCore import QSize, Qt, QObject, pyqtSignal
-from PyQt6.QtGui import QFont
 
 import matplotlib
 matplotlib.use('QtAgg')
@@ -23,9 +21,54 @@ from matplotlib.lines import Line2D
 from ha import HA
 from hama import HAMA
 from utils import DraggableLines, CrossHairCursor
-from statuswidget import StatusWidget
+from scorewidget import ScoreWidget
 from utils import getLatestDataFile
-import utils
+
+class ChooseBarFile(QWidget):
+    fileChangedEvent = pyqtSignal()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.bars = None
+        
+        if platform.system() == "Darwin":
+            self.files_directory = "/Users/ljp2/Data"
+        else:
+            self.files_directory = "C:/Data/"
+        
+        layout = QVBoxLayout()
+        
+        self.title_label = QLabel('Backtest Day')
+        group_box = QGroupBox()
+        group_layout = QVBoxLayout(group_box)
+        group_layout.addWidget(self.title_label, alignment=Qt.AlignmentFlag.AlignTop)
+        
+        self.comboBox = QComboBox()
+        self.files = ["None Selected"] + self.getBarFiles()
+        self.comboBox.addItems(self.files)
+        self.comboBox.currentIndexChanged.connect( self.index_changed )
+        self.comboBox.currentTextChanged.connect( self.text_changed )
+        
+        group_layout.addWidget(self.comboBox, alignment=Qt.AlignmentFlag.AlignTop)
+        
+        layout.addWidget(group_box)
+        # spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        # spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum)
+        # layout.addItem(spacer)
+        self.setLayout(layout)
+
+    def getBarFiles(self):
+        files = glob.glob(f"{self.files_directory}/*.csv")
+        files = [file.replace("\\", "/") for file in files]
+        files = [s.split('/')[-1].split('.')[0] for s in files]  
+        return files
+        
+    def index_changed(self, i): 
+        pass
+
+    def text_changed(self, filename:str):
+        print("Selected in Choose", filename)
+        self.parent.dataFileSelected(filename)
 
 class BarPlotsFigure(QWidget):
     def __init__(self, setup_df:pd.DataFrame):
@@ -41,6 +84,7 @@ class BarPlotsFigure(QWidget):
         self.figure.set_facecolor('#e6e6e6')
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.fig_layout.addWidget(self.canvas, stretch=1)
+        
         
         self.fig_layout.addWidget(NavigationToolbar(self.canvas, self))
         
@@ -74,7 +118,7 @@ class BarPlotsFigure(QWidget):
         self.ax1.set_xlim(self.x_left, self.x_right)
         self.ax1.set_ylim(self.y_low, self.y_high)
         self.ax1.grid(True, linestyle='--', color='gray', alpha=0.7)
-        # self.draggable_lines_1 = DraggableLines(self.ax1, self.buttons_layout.getHorizLineCreateFlag)
+        self.draggable_lines_1 = DraggableLines(self.ax1, self.getHorizLineCreateFlag)
         self.crosshair_1 = CrossHairCursor(self.ax1)
         
         self.ax2.set_title("HA")
@@ -83,6 +127,7 @@ class BarPlotsFigure(QWidget):
         self.ax2.set_xlim(self.x_left, self.x_right)
         self.ax2.set_ylim(self.y_low, self.y_high)
         self.ax2.grid(True, linestyle='--', color='gray', alpha=0.7)
+        # self.draggable_lines_2 = DraggableLines(self.ax2, self.getHorizLineCreateFlag)
         
         self.ax3.set_title("HAMA")
         self.ax3.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
@@ -153,14 +198,49 @@ class BarPlotsFigure(QWidget):
                 color="red",
             )    
        
-class Buttons(QWidget):
-    def  __init__(self, parent):
+class BackTestWindow(QWidget):
+    def __init__(self, setup_df:pd.DataFrame):
         super().__init__()
-        self.parent = parent
-        layout_buttons = QVBoxLayout()
+        
+        self.df = setup_df
+        self.bars = pd.DataFrame()
+        self.habars = HA()
+        self.hamabars = HAMA()
+        
+        # self.createBarPlots()
+        self.bar_plots = BarPlotsFigure(self.df)
+        
+        self.buttons_layout = self.Buttons()
+        self.status_widget = ScoreWidget()
+        
+        button_score_layout = QVBoxLayout()
+        button_score_layout.addLayout(self.buttons_layout)
+        button_score_layout.addWidget(self.status_widget)
+        
+        layout = QHBoxLayout()
     
+        # layout.addLayout(self.fig_layout)
+        layout.addWidget(self.bar_plots)
+        
+        cmd_layout = QVBoxLayout()  
+        buttons_layout = self.Buttons()
+        cmd_layout.addLayout(button_score_layout)
+        layout.addLayout(cmd_layout)
+            
+        self.setLayout(layout)
+        
+    
+    def onButtonClick(self):
+        print("Button clicked.")
+        
+    def Buttons(self) -> QVBoxLayout:
+        layout_buttons = QVBoxLayout()
+        
+        self.choose = ChooseBarFile()
+        layout_buttons.addWidget(self.choose)
+        
         self.next_button = QPushButton("Next Bar")
-        self.next_button.clicked.connect(self.parent.handleNextBar)
+        self.next_button.clicked.connect(self.handleNextBar)
         layout_buttons.addWidget(self.next_button)
         
         self.buttons = {}
@@ -181,54 +261,29 @@ class Buttons(QWidget):
                     return None
             
         self.toggle_cross_button = QPushButton("Toggle Crosshair")
-        self.toggle_cross_button.clicked.connect(self.parent.handleToggleCrosshair)
+        self.toggle_cross_button.clicked.connect(self.handleToggleCrosshair)
         layout_buttons.addWidget(self.toggle_cross_button)
         
         self.redraw_button = QPushButton("Redraw")
-        self.redraw_button.clicked.connect(self.parent.handleRedraw)
+        self.redraw_button.clicked.connect(self.handleRedraw)
         layout_buttons.addWidget(self.redraw_button)
         
         self.buy_button = QPushButton("BUY")
-        self.buy_button.clicked.connect(self.parent.handleBuy)
+        self.buy_button.clicked.connect(self.handleBuy)
         layout_buttons.addWidget(self.buy_button)
         
         self.sell_button = QPushButton("SELL")
-        self.sell_button.clicked.connect(self.parent.handleSell)
+        self.sell_button.clicked.connect(self.handleSell)
         layout_buttons.addWidget(self.sell_button)
         
         self.hline_button = QPushButton("Horiz Line")
         self.horiz_line_create = False
-        self.hline_button.clicked.connect(self.parent.handleCreateHLine)
+        self.hline_button.clicked.connect(self.handleCreateHLine)
         layout_buttons.addWidget(self.hline_button)
         
         spacer_item = QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         layout_buttons.addItem(spacer_item)
-        
-        self.setLayout(layout_buttons)
-
-    
-        
-class BackTestWindow(QWidget):
-    def __init__(self, base_file_name:str):
-        super().__init__()
-        
-        self.df = utils.readBaseFile(basefilename=base_file_name)
-        self.bars = pd.DataFrame()
-        self.habars = HA()
-        self.hamabars = HAMA()
-        
-        self.bar_plots = BarPlotsFigure(self.df)
-        
-        self.buttons = Buttons(self)
-        self.status = StatusWidget()       
-        self.cmd_layout = QVBoxLayout()  
-        self.cmd_layout.addWidget(self.buttons)
-        self.cmd_layout.addWidget(self.status)
- 
-        self.layout = QHBoxLayout()
-        self.layout.addWidget(self.bar_plots)
-        self.layout.addLayout(self.cmd_layout)
-        self.setLayout(self.layout)
+        return layout_buttons
             
     def handleRedraw(self):
         print("REDRAW CLICKED")
@@ -259,21 +314,14 @@ class BackTestWindow(QWidget):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_C:
             self.bar_plots.crosshair_1.toggle_crosshair()
-        
-        
+            
+            
+if __name__ == '__main__':
+    latest_data_file = getLatestDataFile()
+    zf = pd.read_csv(latest_data_file, index_col=0, parse_dates=True)
     
-        
-    def newFileChosen(self, filename:str):
-        print("File chosen =", filename)
-        self.df = utils.readBaseFile(filename)
-        
-        self.cmd_layout.removeWidget(self.buttons)
-        
-        
-        self.buttons = Buttons()
-        self.bar_plots.canvas.draw_idle()
-        
-        
-    def onButtonClick(self):
-        print("Button clicked.")
-    
+    app = QApplication(sys.argv)
+    # main_window = BarPlotsFigure(df)
+    main_window = BackTestWindow(zf)
+    main_window.show()
+    sys.exit(app.exec())

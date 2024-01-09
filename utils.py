@@ -209,7 +209,7 @@ def getDataDirectory():
         home_directory = os.path.expanduser("~")
         file_directory = os.path.join(home_directory, "Data") 
     else:
-        filedirfile_directoryectory = "c:/Data"
+        file_directory = "c:/Data"
     return file_directory
     
 def getLatestDataFile():
@@ -229,6 +229,13 @@ def getRoundedLowHighLimits(filepath:str, multiple:float):
     rlow = round(low / multiple) * multiple - multiple
     rhigh = round(high / multiple) * multiple
     return (rlow, rhigh)
+
+def readBaseFile(basefilename:str):
+    directory = getDataDirectory()
+    filepath = os.path.join(directory, f"{basefilename}.csv")
+    df = pd.read_csv(filepath, index_col=0, parse_dates=True)
+    return df
+
 
 if __name__ == "__main__":
     lf = getLatestDataFile()
