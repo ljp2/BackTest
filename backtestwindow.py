@@ -102,6 +102,7 @@ class BarPlotsFigure(QWidget):
             self.plotBar(habar, self.ax2)
             self.plotBar(hamabar, self.ax3)
             self.canvas.draw()
+        return bar
         
     def plotBar(self, bardf: pd.DataFrame, ax:Axes):
         """Plots the bar directory on the candles (the upper) subplot
@@ -214,6 +215,7 @@ class BackTestWindow(QWidget):
         super().__init__()
         
         self.df = utils.readBaseFile(basefilename=base_file_name)
+        
         self.bars = pd.DataFrame()
         self.habars = HA()
         self.hamabars = HAMA()
@@ -223,15 +225,21 @@ class BackTestWindow(QWidget):
         
         self.buttons = Buttons(self)
         self.status = StatusWidget()       
-        self.cmd_layout = QVBoxLayout()  
+        self.cmd_layout = QVBoxLayout()
+        
+        bar = self.df.iloc[0]
+        self.current_close_label = QLabel(f"{bar.name}    {bar['Open']}")
+        
+        self.cmd_layout.addWidget(self.current_close_label)
         self.cmd_layout.addWidget(self.buttons)
         self.cmd_layout.addWidget(self.status)
+        
  
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.bar_plots)
         self.layout.addLayout(self.cmd_layout)
         self.setLayout(self.layout)
-            
+        
     def handleRedraw(self):
         print("REDRAW CLICKED")
         
@@ -255,22 +263,20 @@ class BackTestWindow(QWidget):
         self.bar_plots.crosshair_1.toggle_crosshair()
              
     def handleNextBar(self, e):
-        self.bar_plots.nextBars(1)
-
+        bar = self.bar_plots.nextBars(1)
+        bar = bar.iloc[-1]
+        self.current_close_label.setText(f"{bar.name}    {bar['Close']}")
+        
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_C:
             self.bar_plots.crosshair_1.toggle_crosshair()
-        
-        
-    
-        
+          
     def newFileChosen(self, filename:str):
         print("File chosen =", filename)
         self.df = utils.readBaseFile(filename)
         
         self.cmd_layout.removeWidget(self.buttons)
-        
-        
+
         self.buttons = Buttons(self)
         self.bar_plots.canvas.draw_idle()
         
