@@ -19,7 +19,8 @@ from matplotlib.lines import Line2D
 
 from ha import HA
 from hama import HAMA
-from utils import ChooseBarFile, DraggableLines, CrossHairCursor, ScoreWidget
+from utils import ChooseBarFile, DraggableLines, CrossHairCursor
+from scorewidget import ScoreWidget
 
 
 class BackTestWindow(QWidget):

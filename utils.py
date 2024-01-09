@@ -201,35 +201,4 @@ class CrossHairCursor():
         self.hline.set_visible(self.crosshair_visible)
         self.vline.set_visible(self.crosshair_visible)
         self.ax.figure.canvas.draw_idle()
-        
-class ScoreWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        form_layout = QFormLayout()
-
-        self.lbl_day_pl = QLabel("Day P/L")
-        self.lbl_day_pl.setFixedWidth(100)
-        self.day_pl = QLineEdit(readOnly=True)
-        self.lbl_day_pl.setFont(QFont("Arial", 18))
-        self.day_pl.setFont(QFont("Arial", 18))
-        
-        self.lbl_position = QLabel("Position")
-        self.lbl_position.setFixedWidth(100)
-        self.position = QLineEdit(readOnly=True)
-        self.lbl_position.setFont(QFont("Arial", 18))
-        self.position.setFont(QFont("Arial", 18))
-
-        self.lbl_current_pl = QLabel("Current P/L")
-        self.lbl_current_pl.setFixedWidth(100)
-        self.current_pl = QLineEdit(readOnly=True)
-        self.lbl_current_pl.setFont(QFont("Arial", 18))
-        self.current_pl.setFont(QFont("Arial", 18))
-        
-        form_layout.addRow(self.lbl_day_pl, self.day_pl)
-        form_layout.addRow(self.lbl_position, self.position)
-        form_layout.addRow(self.lbl_current_pl, self.current_pl)
-
-        layout = QVBoxLayout()
-        layout.addLayout(form_layout)
-        self.setLayout(layout)
+ 
