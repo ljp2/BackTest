@@ -194,9 +194,11 @@ class BackTestWindow(QWidget):
     def __init__(self, base_file_name:str):
         super().__init__()
         
-        self.day_pl = 0.0
-        self.position = 0
+        self.current_price:float = None
+        self.position:int = 0
+        self.dollars_invested = 0.0
         self.current_pl = 0.0
+        self.day_pl = 0.0
         
         self.df = utils.readBaseFile(basefilename=base_file_name)
         self.current_i = 0
@@ -216,11 +218,13 @@ class BackTestWindow(QWidget):
         self.cmd_layout = QVBoxLayout()
         
         bar = self.df.iloc[0]
+        self.current_price = bar['Open']
         self.current_price_label = QLabel()
         self.current_price_label.setFont(QFont("Arial", 18))
         text = f"{bar.name.strftime('%H:%M')} Open  {bar['Open']}"
         self.current_price_label.setText(text)
         
+          
         self.cmd_layout.addWidget(self.current_price_label)
         self.cmd_layout.addWidget(self.buttons)
         self.cmd_layout.addWidget(self.status)
@@ -238,10 +242,10 @@ class BackTestWindow(QWidget):
         self.position += 1
         self.status.updatePosition(self.position)
         
-        
     def handleSell(self):
-        self.position = 1
+        self.position -= 1
         self.status.updatePosition(self.position)
+        
         
     def handleCreateHLine(self):
         self.horiz_line_create = not self.horiz_line_create
@@ -265,8 +269,12 @@ class BackTestWindow(QWidget):
             self.bar_plots.plotBar(bar)
             self.bar_plots.plotHA(habar)
             self.bar_plots.plotHAMA(hamabar)
-        text = f"{bar.index[-1].strftime('%H:%M')} Close  {bar.iloc[-1]['Close']}"
+            
+        current_date_time = bar.index[-1]
+        current_close_price = bar.iloc[-1]['Close']
+        text = f"{current_date_time.strftime('%H:%M')} Close  {current_close_price}"
         self.current_price_label.setText(text)
+        self.current_price = current_close_price
         self.bar_plots.canvas.draw()
         return bar
     
