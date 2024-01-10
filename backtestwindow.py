@@ -32,9 +32,9 @@ class BarPlotsFigure(QWidget):
         super().__init__()
         self.parent = parent
         self.df = setup_df
-        self.bars = pd.DataFrame()
-        self.habars = HA()
-        self.hamabars = HAMA()
+        # self.bars = pd.DataFrame()
+        # self.habars = HA()
+        # self.hamabars = HAMA()
         
         self.fig_layout = QVBoxLayout()
         self.figure = Figure(figsize=(800,600))
@@ -49,20 +49,23 @@ class BarPlotsFigure(QWidget):
         self.setLayout(self.fig_layout)
         
     def createBarPlots(self):
-        self.current_i = 0
-        self.i_last = len(self.df) - 1
-        self.i_left = 0
-        self.i_width = 389
-        self.i_plot_shift_delta = 5
-        self.i_right = self.i_left + self.i_width
-        self.dfleft = self.df.index[0]
-        self.dfright = self.df.index[self.i_last]
-        self.dfhigh = self.df.High.max()
-        self.dflow = self.df.Low.min()
-        self.x_left = self.df.index[self.i_left]
-        self.x_right = self.df.index[self.i_right]
-        self.y_high = self.dfhigh
-        self.y_low = self.dflow
+        # self.current_i = 0
+        # self.i_last = len(self.df) - 1
+        # self.i_left = 0
+        # self.i_width = 389
+        # self.i_plot_shift_delta = 5
+        # self.i_right = self.i_left + self.i_width
+        
+        # self.dfleft = self.df.index[0]
+        # self.dfright = self.df.index[self.i_last]
+        # self.dfhigh = self.df.High.max()
+        # self.dflow = self.df.Low.min()
+        
+        self.x_left = self.df.index[0]
+        self.x_right = self.df.index[-1]
+        self.y_high = self.df['High'].max()
+        self.y_low = self.df['Low'].min()
+        
         self.width = (self.df.index[1] - self.df.index[0]) * 0.6
         self.width2 = self.width * 0.1
     
@@ -92,19 +95,27 @@ class BarPlotsFigure(QWidget):
         self.ax3.set_ylim(self.y_low, self.y_high)
         self.ax3.grid(True, linestyle='--', color='gray', alpha=0.7)
     
-    def nextBars(self, n:int):
-        for i in range(n):
-            bar = self.df.iloc[[self.current_i]]
-            habar = self.habars.addBar(bar)
-            hamabar = self.hamabars.addBar(bar)
-            self.current_i += 1
-            self.plotBar(bar, self.ax1)
-            self.plotBar(habar, self.ax2)
-            self.plotBar(hamabar, self.ax3)
-            self.canvas.draw()
-        return bar
+    # def nextBars(self, n:int):
+    #     for i in range(n):
+    #         bar = self.df.iloc[[self.current_i]]
+    #         habar = self.habars.addBar(bar)
+    #         hamabar = self.hamabars.addBar(bar)
+    #         self.current_i += 1
+    #         self.plotBar(bar, self.ax1)
+    #         self.plotBar(habar, self.ax2)
+    #         self.plotBar(hamabar, self.ax3)
+    #         self.canvas.draw()
+    #     return bar
+    def plotBar(self, bardf: pd.DataFrame):
+        self.plotBarAxes(bardf, self.ax1)
+    
+    def plotHA(self, bardf: pd.DataFrame):
+        self.plotBarAxes(bardf, self.ax2)
+    
+    def plotHAMA(self, bardf: pd.DataFrame):
+        self.plotBarAxes(bardf, self.ax3)
         
-    def plotBar(self, bardf: pd.DataFrame, ax:Axes):
+    def plotBarAxes(self, bardf: pd.DataFrame, ax:Axes):
         """Plots the bar directory on the candles (the upper) subplot
 
         Args:
@@ -172,13 +183,13 @@ class Buttons(QWidget):
             layout_buttons.addWidget(self.buttons[n])
             match n:
                 case 5:
-                    self.buttons[5].clicked.connect(lambda : self.parent.bar_plots.nextBars(5))
+                    self.buttons[5].clicked.connect(lambda : self.parent.nextBars(5))
                 case 10:
-                    self.buttons[10].clicked.connect(lambda : self.parent.bar_plots.nextBars(10))
+                    self.buttons[10].clicked.connect(lambda : self.parent.nextBars(10))
                 case 20 :
-                    self.buttons[20].clicked.connect(lambda : self.parent.bar_plots.nextBars(20))
+                    self.buttons[20].clicked.connect(lambda : self.parent.nextBars(20))
                 case 30 :
-                    self.buttons[30].clicked.connect(lambda : self.parent.bar_plots.nextBars(30))
+                    self.buttons[30].clicked.connect(lambda : self.parent.nextBars(30))
                 case default:
                     return None
             
@@ -215,6 +226,7 @@ class BackTestWindow(QWidget):
         super().__init__()
         
         self.df = utils.readBaseFile(basefilename=base_file_name)
+        self.current_i = 0
         
         self.bars = pd.DataFrame()
         self.habars = HA()
@@ -263,22 +275,34 @@ class BackTestWindow(QWidget):
         self.bar_plots.crosshair_1.toggle_crosshair()
              
     def handleNextBar(self, e):
-        bar = self.bar_plots.nextBars(1)
+        bar = self.nextBars(1)
         bar = bar.iloc[-1]
         self.current_close_label.setText(f"{bar.name}    {bar['Close']}")
-        
+
+    def nextBars(self, n:int):
+        for i in range(n):
+            bar = self.df.iloc[[self.current_i]]
+            habar = self.habars.addBar(bar)
+            hamabar = self.hamabars.addBar(bar)
+            self.current_i += 1
+            self.bar_plots.plotBar(bar)
+            self.bar_plots.plotHA(habar)
+            self.bar_plots.plotHAMA(hamabar)
+        self.bar_plots.canvas.draw()
+        return bar
+    
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_C:
             self.bar_plots.crosshair_1.toggle_crosshair()
           
-    def newFileChosen(self, filename:str):
-        print("File chosen =", filename)
-        self.df = utils.readBaseFile(filename)
+    # def newFileChosen(self, filename:str):
+    #     print("File chosen =", filename)
+    #     self.df = utils.readBaseFile(filename)
         
-        self.cmd_layout.removeWidget(self.buttons)
+    #     self.cmd_layout.removeWidget(self.buttons)
 
-        self.buttons = Buttons(self)
-        self.bar_plots.canvas.draw_idle()
+    #     self.buttons = Buttons(self)
+    #     self.bar_plots.canvas.draw_idle()
         
         
     def onButtonClick(self):
