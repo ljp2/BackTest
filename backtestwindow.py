@@ -80,6 +80,26 @@ class BarPlotsFigure(QWidget):
         self.ax3.set_ylim(self.y_low, self.y_high)
         self.ax3.grid(True, linestyle='--', color='gray', alpha=0.7)
     
+        x = [self.x_right, self.x_right]
+        x = [self.df.index[100], self.df.index[100]]
+        y = [self.y_low, self.y_high]
+        # self.vline1 = Line2D(x,y, color='red', linestyle='--', label='Cursor')
+        # self.ax1.add_line(self.vline1)
+        self.vline2 = Line2D(x,y, color='red', linestyle='--')
+        self.ax2.add_line(self.vline2)
+        self.vline3 = Line2D(x,y, color='red', linestyle='--')
+        self.ax3.add_line(self.vline3)
+    
+        self.canvas.mpl_connect('motion_notify_event', self.update_line)
+        
+    def update_line(self, event):
+        if event.inaxes == self.ax1:
+            x_cursor = event.xdata
+            # self.vline1.set_xdata([x_cursor, x_cursor])
+            self.vline2.set_xdata([x_cursor, x_cursor])
+            self.vline3.set_xdata([x_cursor, x_cursor])
+            # self.bar_plots.canvas.draw_idle() 
+        
     def plotBar(self, bardf: pd.DataFrame):
         self.plotBarAxes(bardf, self.ax1)
     
@@ -221,7 +241,7 @@ class BackTestWindow(QWidget):
         self.current_price = bar['Open']
         self.current_price_label = QLabel()
         self.current_price_label.setFont(QFont("Arial", 18))
-        text = f"{bar.name.strftime('%H:%M')} Open  {bar['Open']}"
+        text = f"{bar.name.strftime('%-H:%M')} Open  {bar['Open']}"
         self.current_price_label.setText(text)
         
           
@@ -272,7 +292,7 @@ class BackTestWindow(QWidget):
             
         current_date_time = bar.index[-1]
         current_close_price = bar.iloc[-1]['Close']
-        text = f"{current_date_time.strftime('%H:%M')} Close  {current_close_price}"
+        text = f"{current_date_time.strftime('%-I:%M')} Close  {current_close_price}"
         self.current_price_label.setText(text)
         self.current_price = current_close_price
         self.bar_plots.canvas.draw()

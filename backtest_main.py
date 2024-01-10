@@ -6,9 +6,9 @@ import pandas as pd
 from multiprocessing import Process
 from datetime import datetime
 
-from PyQt6.QtCore import QSize, Qt, pyqtSignal
+from PyQt6.QtCore import QSize, Qt, pyqtSignal, QDate
 from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, \
-    QLabel, QPushButton, QComboBox, QGroupBox, QSpacerItem, QSizePolicy
+    QLabel, QPushButton, QComboBox, QGroupBox, QSpacerItem, QSizePolicy, QDateEdit
 from PyQt6.QtGui import QFont
 
 from backtestwindow import BackTestWindow
@@ -46,8 +46,31 @@ class ChooseBarFile(QWidget):
         self.chosen_label.setFont(QFont("Arial", 12))
         layout.addWidget(self.chosen_label)
         layout.setAlignment(self.title_label, Qt.AlignmentFlag.AlignCenter)
-        
         self.setLayout(layout)
+        
+    #     date_edit = QDateEdit(self)
+    #     date_edit.setCalendarPopup(True)  # Enable calendar popup
+    #     date_edit.setDate(QDate.currentDate())  # Set the initial date
+
+    #     # Connect a slot to handle the date change
+    #     date_edit.dateChanged.connect(self.handle_date_change)
+
+    #     layout.addWidget(date_edit)
+    
+    
+    # def set_special_dates(self, calendar_widget):
+    #     # Set styles for specific dates based on a logical condition
+    #     special_dates = [QDate(2024, 1, 15), QDate(2024, 1, 20)]
+
+    #     for date in special_dates:
+    #         special_style = calendar_widget.dateTextFormat(date)
+    #         special_style.setForeground(QColor(Qt.GlobalColor.red))  # Set color to red
+    #         special_style.setFontWeight(75)  # Bold
+    #         calendar_widget.setDateTextFormat(date, special_style)
+
+    # def handle_date_change(self, new_date):
+    #     print('Selected date:', new_date.toString("yyyy-MM-dd"))
+
 
     def getBarFiles(self):
         files = glob.glob(f"{self.files_directory}/*.csv")
