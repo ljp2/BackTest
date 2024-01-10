@@ -49,18 +49,6 @@ class BarPlotsFigure(QWidget):
         self.setLayout(self.fig_layout)
         
     def createBarPlots(self):
-        # self.current_i = 0
-        # self.i_last = len(self.df) - 1
-        # self.i_left = 0
-        # self.i_width = 389
-        # self.i_plot_shift_delta = 5
-        # self.i_right = self.i_left + self.i_width
-        
-        # self.dfleft = self.df.index[0]
-        # self.dfright = self.df.index[self.i_last]
-        # self.dfhigh = self.df.High.max()
-        # self.dflow = self.df.Low.min()
-        
         self.x_left = self.df.index[0]
         self.x_right = self.df.index[-1]
         self.y_high = self.df['High'].max()
@@ -95,17 +83,6 @@ class BarPlotsFigure(QWidget):
         self.ax3.set_ylim(self.y_low, self.y_high)
         self.ax3.grid(True, linestyle='--', color='gray', alpha=0.7)
     
-    # def nextBars(self, n:int):
-    #     for i in range(n):
-    #         bar = self.df.iloc[[self.current_i]]
-    #         habar = self.habars.addBar(bar)
-    #         hamabar = self.hamabars.addBar(bar)
-    #         self.current_i += 1
-    #         self.plotBar(bar, self.ax1)
-    #         self.plotBar(habar, self.ax2)
-    #         self.plotBar(hamabar, self.ax3)
-    #         self.canvas.draw()
-    #     return bar
     def plotBar(self, bardf: pd.DataFrame):
         self.plotBarAxes(bardf, self.ax1)
     
@@ -172,26 +149,15 @@ class Buttons(QWidget):
         self.parent = parent
         layout_buttons = QVBoxLayout()
     
-        self.next_button = QPushButton("Next Bar")
-        self.next_button.clicked.connect(self.parent.handleNextBar)
-        layout_buttons.addWidget(self.next_button)
-        
         self.buttons = {}
-        for n in [5,10,20,30]:
-            btn_label = f"Next {n} Bars"
+        for n in [1, 5,10,20,30]:
+            if n == 1:
+                btn_label = "Get Next Bar"
+            else:
+                btn_label = f"Get Next {n} Bars"
             self.buttons[n] = QPushButton(btn_label)
             layout_buttons.addWidget(self.buttons[n])
-            match n:
-                case 5:
-                    self.buttons[5].clicked.connect(lambda : self.parent.nextBars(5))
-                case 10:
-                    self.buttons[10].clicked.connect(lambda : self.parent.nextBars(10))
-                case 20 :
-                    self.buttons[20].clicked.connect(lambda : self.parent.nextBars(20))
-                case 30 :
-                    self.buttons[30].clicked.connect(lambda : self.parent.nextBars(30))
-                case default:
-                    return None
+            self.buttons[n].clicked.connect(self.onNextBars)
             
         self.toggle_cross_button = QPushButton("Toggle Crosshair")
         self.toggle_cross_button.clicked.connect(self.parent.handleToggleCrosshair)
@@ -219,7 +185,11 @@ class Buttons(QWidget):
         
         self.setLayout(layout_buttons)
 
-    
+    def onNextBars(self):
+        button_name = self.sender().text()
+        s = button_name.split(" ")[2]
+        n = 1 if s == "Bar" else int(s)
+        self.parent.nextBars(n)
         
 class BackTestWindow(QWidget):
     def __init__(self, base_file_name:str):
@@ -240,9 +210,12 @@ class BackTestWindow(QWidget):
         self.cmd_layout = QVBoxLayout()
         
         bar = self.df.iloc[0]
-        self.current_close_label = QLabel(f"{bar.name}    {bar['Open']}")
+        self.current_price_label = QLabel()
+        self.current_price_label.setFont(QFont("Arial", 18))
+        text = f"{bar.name.strftime('%H:%M')} Open  {bar['Open']}"
+        self.current_price_label.setText(text)
         
-        self.cmd_layout.addWidget(self.current_close_label)
+        self.cmd_layout.addWidget(self.current_price_label)
         self.cmd_layout.addWidget(self.buttons)
         self.cmd_layout.addWidget(self.status)
         
@@ -274,11 +247,6 @@ class BackTestWindow(QWidget):
     def handleToggleCrosshair(self):
         self.bar_plots.crosshair_1.toggle_crosshair()
              
-    def handleNextBar(self, e):
-        bar = self.nextBars(1)
-        bar = bar.iloc[-1]
-        self.current_close_label.setText(f"{bar.name}    {bar['Close']}")
-
     def nextBars(self, n:int):
         for i in range(n):
             bar = self.df.iloc[[self.current_i]]
@@ -288,22 +256,14 @@ class BackTestWindow(QWidget):
             self.bar_plots.plotBar(bar)
             self.bar_plots.plotHA(habar)
             self.bar_plots.plotHAMA(hamabar)
+        text = f"{bar.index[-1].strftime('%H:%M')} Close  {bar.iloc[-1]['Close']}"
+        self.current_price_label.setText(text)
         self.bar_plots.canvas.draw()
         return bar
     
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_C:
-            self.bar_plots.crosshair_1.toggle_crosshair()
-          
-    # def newFileChosen(self, filename:str):
-    #     print("File chosen =", filename)
-    #     self.df = utils.readBaseFile(filename)
-        
-    #     self.cmd_layout.removeWidget(self.buttons)
-
-    #     self.buttons = Buttons(self)
-    #     self.bar_plots.canvas.draw_idle()
-        
+            self.bar_plots.crosshair_1.toggle_crosshair()  
         
     def onButtonClick(self):
         print("Button clicked.")
