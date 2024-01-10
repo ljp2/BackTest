@@ -40,7 +40,7 @@ class LabelValue(QWidget):
         self.val.setReadOnly(readonly)
         self.val.setFixedWidth(width)
         self.val.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.lbl.setFont(QFont("Arial", fontsize))
+        self.val.setFont(QFont("Arial", fontsize+2))
 
         form.addRow(self.lbl, self.val)
         
@@ -61,6 +61,14 @@ class StatusWidget(QWidget):
         self.current_pl = LabelValue(form_layout, text="Current P/L")
         self.setLayout(form_layout)
 
+    def updateDayPL(self, value):
+        self.day_pl.setValue(val=value)
+        
+    def updatePosition(self, value):
+        self.position.setValue(val=value)
+        
+    def updateCurrentPL(self, value):
+        self.current_pl.setValue(val=value)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

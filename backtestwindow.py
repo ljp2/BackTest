@@ -32,9 +32,6 @@ class BarPlotsFigure(QWidget):
         super().__init__()
         self.parent = parent
         self.df = setup_df
-        # self.bars = pd.DataFrame()
-        # self.habars = HA()
-        # self.hamabars = HAMA()
         
         self.fig_layout = QVBoxLayout()
         self.figure = Figure(figsize=(800,600))
@@ -163,9 +160,11 @@ class Buttons(QWidget):
         self.toggle_cross_button.clicked.connect(self.parent.handleToggleCrosshair)
         layout_buttons.addWidget(self.toggle_cross_button)
         
-        self.redraw_button = QPushButton("Redraw")
-        self.redraw_button.clicked.connect(self.parent.handleRedraw)
-        layout_buttons.addWidget(self.redraw_button)
+        self.redraw_space = QLabel()
+        layout_buttons.addWidget(self.redraw_space)
+        # self.redraw_button = QPushButton("Redraw")
+        # self.redraw_button.clicked.connect(self.parent.handleRedraw)
+        # layout_buttons.addWidget(self.redraw_button)
         
         self.buy_button = QPushButton("BUY")
         self.buy_button.clicked.connect(self.parent.handleBuy)
@@ -195,6 +194,10 @@ class BackTestWindow(QWidget):
     def __init__(self, base_file_name:str):
         super().__init__()
         
+        self.day_pl = 0.0
+        self.position = 0
+        self.current_pl = 0.0
+        
         self.df = utils.readBaseFile(basefilename=base_file_name)
         self.current_i = 0
         
@@ -206,7 +209,10 @@ class BackTestWindow(QWidget):
         self.bar_plots = BarPlotsFigure(self, self.df)
         
         self.buttons = Buttons(self)
-        self.status = StatusWidget()       
+        self.status = StatusWidget()
+        self.status.updateDayPL(self.day_pl)
+        self.status.updatePosition(self.position)
+        self.status.updateCurrentPL(self.current_pl)
         self.cmd_layout = QVBoxLayout()
         
         bar = self.df.iloc[0]
@@ -229,10 +235,13 @@ class BackTestWindow(QWidget):
         print("REDRAW CLICKED")
         
     def handleBuy(self):
-        print("BUY CLICKED")
+        self.position += 1
+        self.status.updatePosition(self.position)
+        
         
     def handleSell(self):
-        print("SELL CLICKED")
+        self.position = 1
+        self.status.updatePosition(self.position)
         
     def handleCreateHLine(self):
         self.horiz_line_create = not self.horiz_line_create
