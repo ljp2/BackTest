@@ -116,9 +116,9 @@ class BarPlotsFigure(QWidget):
             self.position_line.remove()
             self.position_line = None
         if position > 0:
-            self.position_line = self.ax1.axhline(y=value, color='green', linestyle='-', linewidth=0.5)
+            self.position_line = self.ax1.axhline(y=value, color='green', linestyle='-', linewidth=1.0)
         elif position < 0:
-            self.position_line = self.ax1.axhline(y=value, color='red', linestyle='-', linewidth=0.5)
+            self.position_line = self.ax1.axhline(y=value, color='red', linestyle='-', linewidth=1.0)
         self.canvas.draw_idle()
             
             
@@ -354,7 +354,7 @@ class BackTestWindow(QWidget):
     def handleCreateHLine(self):
         self.horiz_line_create = not self.horiz_line_create
         if self.horiz_line_create:
-            self.buttons.hline_button.setStyleSheet("background-color: red;")
+            self.buttons.hline_button.setStyleSheet("background-color: lightblue;")
         else:
             self.buttons.hline_button.setStyleSheet("")
         

@@ -125,7 +125,7 @@ class DraggableLines:
             elif self.getHorizLineCreateFlag():
                 # new_line, = self.ax.plot([0, 1], [event.ydata, event.ydata], color='r', lw=2)
                 x, y = event.xdata, event.ydata
-                new_line = self.ax.axhline(y=y, color='r', linestyle='--', lw=1)
+                new_line = self.ax.axhline(y=y, color='blue', linestyle='--', lw=1)
                 self.lines.append(new_line)
                 self.current_line = new_line
                 self.is_dragging = True
