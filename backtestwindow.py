@@ -5,7 +5,7 @@ import pandas as pd
 from multiprocessing import Process
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QSizePolicy,\
-    QSpacerItem, QWidget, QPushButton, QComboBox, QGroupBox, QLabel
+    QSpacerItem, QWidget, QPushButton, QComboBox, QGroupBox, QLabel, QMessageBox
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtCore import QSize, Qt, QObject, pyqtSignal
 from PyQt6.QtGui import QFont
@@ -32,6 +32,7 @@ class BarPlotsFigure(QWidget):
         super().__init__()
         self.parent = parent
         self.df = setup_df
+        self.position_line:Line2D = "None"
         
         self.fig_layout = QVBoxLayout()
         self.figure = Figure(figsize=(1000,750))
@@ -46,10 +47,14 @@ class BarPlotsFigure(QWidget):
         self.setLayout(self.fig_layout)
         
     def createBarPlots(self):
+        maxy = self.df['High'].max()
+        miny = self.df['Low'].min()
+        height = maxy - miny
+        delta = 0.05 * height
         self.x_left = self.df.index[0]
         self.x_right = self.df.index[-1]
-        self.y_high = self.df['High'].max()
-        self.y_low = self.df['Low'].min()
+        self.y_high = maxy + delta
+        self.y_low = miny - delta
         
         self.width = (self.df.index[1] - self.df.index[0]) * 0.6
         self.width2 = self.width * 0.1
@@ -91,7 +96,12 @@ class BarPlotsFigure(QWidget):
         self.ax3.add_line(self.vline3)
     
         self.canvas.mpl_connect('motion_notify_event', self.update_line)
-        
+
+    def zoomAll(self):
+        self.ax1.set_xlim(self.x_left, self.x_right)
+        self.ax1.set_ylim(self.y_low, self.y_high)
+        self.canvas.draw()
+            
     def update_line(self, event):
         if event.inaxes == self.ax1:
             x_cursor = event.xdata
@@ -99,6 +109,30 @@ class BarPlotsFigure(QWidget):
             self.vline2.set_xdata([x_cursor, x_cursor])
             self.vline3.set_xdata([x_cursor, x_cursor])
             # self.bar_plots.canvas.draw_idle() 
+            
+    def updatePositionLine(self, position, value):
+        if value == 0 and self.position_line is not None:
+            self.position_line.remove()
+            self.canvas.draw_idle()
+            return
+        if self.position_line is None:
+            self.drawPositionLine(position, value)
+            return
+        if self.position_line is not None:
+            self.position_line.remove()
+            self.drawPositionLine(position, value)
+        
+    def drawPositionLine(self, position, value):
+        if position > 0:
+            self.position_line = self.ax1.axhline(y=value, color='black')
+        else:
+            self.position_line = self.ax1.axhline(y=value, color='red')
+        self.canvas.draw_idle()
+            
+            
+            
+            
+        
         
     def plotBar(self, bardf: pd.DataFrame):
         self.plotBarAxes(bardf, self.ax1)
@@ -180,11 +214,25 @@ class Buttons(QWidget):
         self.toggle_cross_button.clicked.connect(self.parent.handleToggleCrosshair)
         layout_buttons.addWidget(self.toggle_cross_button)
         
-        self.redraw_space = QLabel()
-        layout_buttons.addWidget(self.redraw_space)
+        layout_buttons.addWidget(QLabel())  #SPACE
         # self.redraw_button = QPushButton("Redraw")
         # self.redraw_button.clicked.connect(self.parent.handleRedraw)
         # layout_buttons.addWidget(self.redraw_button)
+        
+        layout_buttons.addWidget(QLabel())
+        self.show_latest_hour_button = QPushButton('Show Latest 30 Min')
+        self.show_latest_hour_button.clicked.connect(self.parent.handleZoomLatest30)
+        layout_buttons.addWidget(self.show_latest_hour_button)
+        
+        self.show_latest_hour_button = QPushButton('Show Latest 60 Min')
+        self.show_latest_hour_button.clicked.connect(self.parent.handleZoomLatest60)
+        layout_buttons.addWidget(self.show_latest_hour_button)
+        
+        self.zoom_all_button = QPushButton('Show All Day')
+        self.zoom_all_button.clicked.connect(self.parent.handleZoomAll)
+        layout_buttons.addWidget(self.zoom_all_button)
+        
+        layout_buttons.addWidget(QLabel())  #SPACE
         
         self.buy_button = QPushButton("BUY")
         self.buy_button.clicked.connect(self.parent.handleBuy)
@@ -222,7 +270,7 @@ class BackTestWindow(QWidget):
         self.portfolio_share_value = 0.0
         
         self.df = utils.readBaseFile(basefilename=base_file_name)
-        self.current_i = 0
+        self.current_i = -1
         
         self.bars = pd.DataFrame()
         self.habars = HA()
@@ -242,7 +290,8 @@ class BackTestWindow(QWidget):
         self.current_price = bar['Open']
         self.current_price_label = QLabel()
         self.current_price_label.setFont(QFont("Arial", 18))
-        text = f"{bar.name.strftime('%-H:%M')} Open  {bar['Open']}"
+        text = f"{bar.name.strftime('%H:%M')} Open  {bar['Open']}"
+        if text[0] == '0' : text = text[1:]
         self.current_price_label.setText(text)
         
           
@@ -264,7 +313,7 @@ class BackTestWindow(QWidget):
             self.portfolio_share_value = self.current_price
             self.position = 1
         elif self.position < 0:
-            current_value_per_share = self.portfolio_share_value / (-self.position)
+            current_value_per_share = self.avgPricePerShare()
             transaction_pl = current_value_per_share - self.current_price
             self.day_pl += transaction_pl * self.value_per_point
             self.position += 1
@@ -273,6 +322,7 @@ class BackTestWindow(QWidget):
             self.portfolio_share_value += self.current_price
             self.position += 1  
         self.status.updatePosition(self.position)
+        self.bar_plots.updatePositionLine(self.position, current_value_per_share)
         
     def handleSell(self):
         if self.position == 0:
@@ -282,14 +332,15 @@ class BackTestWindow(QWidget):
             self.portfolio_share_value += self.current_price
             self.position -= 1
         else: # position > 0
-            current_value_per_share = self.portfolio_share_value / self.position
-            transaction_pl = self.current_price -current_value_per_share
+            current_value_per_share = self.avgPricePerShare()
+            transaction_pl = self.current_price - current_value_per_share
             self.day_pl += transaction_pl * self.value_per_point
             self.position -= 1
             self.status.updateDayPL(round(self.day_pl,2))
+            
         self.status.updatePosition(self.position)
+        self.bar_plots.updatePositionLine(self.position, current_value_per_share)
         
-
     def handleCreateHLine(self):
         self.horiz_line_create = not self.horiz_line_create
         if self.horiz_line_create:
@@ -302,29 +353,90 @@ class BackTestWindow(QWidget):
         
     def handleToggleCrosshair(self):
         self.bar_plots.crosshair_1.toggle_crosshair()
+    
+    def zoomLatestN(self, n):
+        x2_i = self.current_i
+        x1_i = x2_i - n
+        first = max(0, x1_i)
+        last = max(x2_i, first + n)
+        x1 = self.df.index[first]
+        x2 = self.df.index[last]
+        self.bar_plots.ax1.set_xlim(x1, x2)
+        self.bar_plots.canvas.draw()
+        
+    def handleZoomLatest30(self):
+        self.zoomLatestN(30 + 10)
+        
+    def handleZoomLatest60(self):
+        self.zoomLatestN(60 + 20)
+        
+    def handleZoomAll(self):
+        self.bar_plots.zoomAll()
              
     def nextBars(self, n:int):
+        if self.current_i >= len(self.df) - 1:
+            self.show_no_more_bars_alert()
+            return
         for i in range(n):
+            self.current_i += 1
+            if self.current_i >= len(self.df):
+                self.show_no_more_bars_alert()
+                break
             bar = self.df.iloc[[self.current_i]]
             habar = self.habars.addBar(bar)
             hamabar = self.hamabars.addBar(bar)
-            self.current_i += 1
             self.bar_plots.plotBar(bar)
             self.bar_plots.plotHA(habar)
             self.bar_plots.plotHAMA(hamabar)
             
         current_date_time = bar.index[-1]
         current_close_price = bar.iloc[-1]['Close']
-        text = f"{current_date_time.strftime('%-I:%M')} Close  {current_close_price}"
+        text = f"{current_date_time.strftime('%I:%M')} Close  {current_close_price}"
+        if text[0] == '0' : text = text[1:]
         self.current_price_label.setText(text)
         self.current_price = current_close_price
         self.bar_plots.canvas.draw()
+        self.updateCurrentPL()
         return bar
     
+    def show_no_more_bars_alert(self):
+        # Create a QMessageBox
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle("Alert")
+        msg_box.setText("NO MORE BARS")
+        # Set the icon (optional)
+        msg_box.setIcon(QMessageBox.Icon.Information)
+        msg_box.setDefaultButton(QMessageBox.StandardButton.Ok)
+        result = msg_box.exec()
+
+    
+    def avgPricePerShare(self):
+        if self.position == 0:
+            avg_price_per_share = ""
+        elif self.position < 0:
+            avg_price_per_share = self.portfolio_share_value / (-self.position)
+        else:
+            avg_price_per_share = self.portfolio_share_value / self.position
+        return avg_price_per_share
+               
+    
+    def updateCurrentPL(self):
+        if self.position == 0:
+            current_pl = 0.0
+        elif self.position < 0:
+            current_value_per_share = self.portfolio_share_value / (-self.position)
+            current_pl = current_value_per_share - self.current_price
+        else:
+            current_value_per_share = self.portfolio_share_value / self.position
+            current_pl = (self.current_price -current_value_per_share) * self.value_per_point
+        self.status.updateCurrentPL(round(current_pl,2))
+        
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_C:
             self.bar_plots.crosshair_1.toggle_crosshair()  
-        
-    def onButtonClick(self):
-        print("Button clicked.")
     
+        
+if __name__ == '__main__':
+    from backtest_main import BacktestProcess
+    BacktestProcess('20231130')
+        
