@@ -32,7 +32,7 @@ class BarPlotsFigure(QWidget):
         super().__init__()
         self.parent = parent
         self.df = setup_df
-        self.position_line:Line2D = "None"
+        self.position_line:Line2D = None
         
         self.fig_layout = QVBoxLayout()
         self.figure = Figure(figsize=(1000,750))
@@ -110,23 +110,15 @@ class BarPlotsFigure(QWidget):
             self.vline3.set_xdata([x_cursor, x_cursor])
             # self.bar_plots.canvas.draw_idle() 
             
+
     def updatePositionLine(self, position, value):
-        if value == 0 and self.position_line is not None:
-            self.position_line.remove()
-            self.canvas.draw_idle()
-            return
-        if self.position_line is None:
-            self.drawPositionLine(position, value)
-            return
         if self.position_line is not None:
             self.position_line.remove()
-            self.drawPositionLine(position, value)
-        
-    def drawPositionLine(self, position, value):
+            self.position_line = None
         if position > 0:
-            self.position_line = self.ax1.axhline(y=value, color='black')
-        else:
-            self.position_line = self.ax1.axhline(y=value, color='red')
+            self.position_line = self.ax1.axhline(y=value, color='green', linestyle='-', linewidth=0.5)
+        elif position < 0:
+            self.position_line = self.ax1.axhline(y=value, color='red', linestyle='-', linewidth=0.5)
         self.canvas.draw_idle()
             
             
@@ -267,7 +259,7 @@ class BackTestWindow(QWidget):
         self.current_pl = 0.0
         self.day_pl = 0.0
         
-        self.portfolio_share_value = 0.0
+        self.net_value_held_shares = 0.0
         
         self.df = utils.readBaseFile(basefilename=base_file_name)
         self.current_i = -1
@@ -308,38 +300,56 @@ class BackTestWindow(QWidget):
     def handleRedraw(self):
         print("REDRAW CLICKED")
         
-    def handleBuy(self):
+    def avgPurchasedPricePerShare(self):
         if self.position == 0:
-            self.portfolio_share_value = self.current_price
+            avg_price_per_share = None
+        elif self.position < 0:
+            avg_price_per_share = self.net_value_held_shares / (-self.position)
+        else:
+            avg_price_per_share = self.net_value_held_shares / self.position
+        return avg_price_per_share
+    
+    def handleBuy(self):
+        current_value_per_share = self.avgPurchasedPricePerShare()
+        if self.position == 0:
+            self.net_value_held_shares = self.current_price
             self.position = 1
         elif self.position < 0:
-            current_value_per_share = self.avgPricePerShare()
             transaction_pl = current_value_per_share - self.current_price
             self.day_pl += transaction_pl * self.value_per_point
+            
+            self.net_value_held_shares -= self.current_price
             self.position += 1
             self.status.updateDayPL(round(self.day_pl,2))
+            
         else: # position > 0
-            self.portfolio_share_value += self.current_price
+            self.net_value_held_shares += self.current_price
             self.position += 1  
+                
+        new_current_value_per_share = self.avgPurchasedPricePerShare()
         self.status.updatePosition(self.position)
-        self.bar_plots.updatePositionLine(self.position, current_value_per_share)
-        
+        self.bar_plots.updatePositionLine(self.position, new_current_value_per_share)
+        self.updateCurrentPL()
+           
     def handleSell(self):
+        current_value_per_share = self.avgPurchasedPricePerShare()
         if self.position == 0:
-            self.portfolio_share_value = self.current_price
+            self.net_value_held_shares = self.current_price
             self.position = -1
         elif self.position < 0:
-            self.portfolio_share_value += self.current_price
+            self.net_value_held_shares += self.current_price
             self.position -= 1
         else: # position > 0
-            current_value_per_share = self.avgPricePerShare()
+            self.net_value_held_shares -= self.current_price
             transaction_pl = self.current_price - current_value_per_share
             self.day_pl += transaction_pl * self.value_per_point
             self.position -= 1
             self.status.updateDayPL(round(self.day_pl,2))
             
+        new_current_value_per_share = self.avgPurchasedPricePerShare()
         self.status.updatePosition(self.position)
-        self.bar_plots.updatePositionLine(self.position, current_value_per_share)
+        self.bar_plots.updatePositionLine(self.position, new_current_value_per_share)
+        self.updateCurrentPL()
         
     def handleCreateHLine(self):
         self.horiz_line_create = not self.horiz_line_create
@@ -410,24 +420,16 @@ class BackTestWindow(QWidget):
         result = msg_box.exec()
 
     
-    def avgPricePerShare(self):
-        if self.position == 0:
-            avg_price_per_share = ""
-        elif self.position < 0:
-            avg_price_per_share = self.portfolio_share_value / (-self.position)
-        else:
-            avg_price_per_share = self.portfolio_share_value / self.position
-        return avg_price_per_share
-               
+                 
     
     def updateCurrentPL(self):
         if self.position == 0:
             current_pl = 0.0
         elif self.position < 0:
-            current_value_per_share = self.portfolio_share_value / (-self.position)
+            current_value_per_share = self.net_value_held_shares / (-self.position)
             current_pl = current_value_per_share - self.current_price
         else:
-            current_value_per_share = self.portfolio_share_value / self.position
+            current_value_per_share = self.net_value_held_shares / self.position
             current_pl = (self.current_price -current_value_per_share) * self.value_per_point
         self.status.updateCurrentPL(round(current_pl,2))
         
