@@ -427,8 +427,8 @@ class BackTestWindow(QWidget):
             current_pl = 0.0
         elif self.position < 0:
             current_value_per_share = self.net_value_held_shares / (-self.position)
-            current_pl = current_value_per_share - self.current_price
-        else:
+            current_pl = (current_value_per_share - self.current_price ) * self.value_per_point
+        else:  # posiiton > 0
             current_value_per_share = self.net_value_held_shares / self.position
             current_pl = (self.current_price -current_value_per_share) * self.value_per_point
         self.status.updateCurrentPL(round(current_pl,2))
