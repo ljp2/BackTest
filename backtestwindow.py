@@ -413,10 +413,7 @@ class BackTestWindow(QWidget):
         msg_box.setIcon(QMessageBox.Icon.Information)
         msg_box.setDefaultButton(QMessageBox.StandardButton.Ok)
         result = msg_box.exec()
-
-    
-                 
-    
+        
     def updateCurrentPL(self):
         if self.position == 0:
             current_pl = 0.0
