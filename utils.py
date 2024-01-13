@@ -9,11 +9,8 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.widgets import Button
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QSizePolicy, \
-    QFormLayout, QSpacerItem, QWidget, QPushButton, QComboBox, QGroupBox, QLabel, QLineEdit
-from PyQt6 import QtCore, QtWidgets
-from PyQt6.QtCore import QSize, Qt, pyqtSignal, QDate
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import  QDate
+
 import yfinance as yf
 
 class ToggleButton(Button):
@@ -199,8 +196,7 @@ def getDF(qdate:QDate) -> pd.DataFrame:
     end_date = date_to_fetch + datetime.timedelta(days=1)
 
     try:
-        data = yf.download(ticker_symbol, start=date_to_fetch, end=end_date, interval="1m")
-        
+        data = yf.download(ticker_symbol, start=date_to_fetch, end=end_date, interval="1m")    
         if data.empty:
             return None
         else:
