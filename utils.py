@@ -3,6 +3,7 @@ import sys
 import os
 import math
 import glob
+import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -11,54 +12,9 @@ from matplotlib.widgets import Button
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QSizePolicy, \
     QFormLayout, QSpacerItem, QWidget, QPushButton, QComboBox, QGroupBox, QLabel, QLineEdit
 from PyQt6 import QtCore, QtWidgets
-from PyQt6.QtCore import QSize, Qt, pyqtSignal
+from PyQt6.QtCore import QSize, Qt, pyqtSignal, QDate
 from PyQt6.QtGui import QFont
-
-# class ChooseBarFile(QWidget):
-#     fileChangedEvent = pyqtSignal()
-#     def __init__(self, parent=None):
-#         super().__init__(parent)
-        
-#         self.bars = None
-        
-#         if platform.system() == "Darwin":
-#             self.files_directory = "/Users/ljp2/Data"
-#         else:
-#             self.files_directory = "C:/Data/"
-        
-#         layout = QVBoxLayout()
-        
-#         self.title_label = QLabel('Backtest Day')
-#         group_box = QGroupBox()
-#         group_layout = QVBoxLayout(group_box)
-#         group_layout.addWidget(self.title_label, alignment=Qt.AlignmentFlag.AlignTop)
-        
-#         self.comboBox = QComboBox()
-#         self.files = ["None Selected"] + self.getBarFiles()
-#         self.comboBox.addItems(self.files)
-#         self.comboBox.currentIndexChanged.connect( self.index_changed )
-#         self.comboBox.currentTextChanged.connect( self.text_changed )
-        
-#         group_layout.addWidget(self.comboBox, alignment=Qt.AlignmentFlag.AlignTop)
-        
-#         layout.addWidget(group_box)
-#         # spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-#         # spacer = QSpacerItem(1, 1, QSizePolicy.Policy.Minimum)
-#         # layout.addItem(spacer)
-#         self.setLayout(layout)
-
-#     def getBarFiles(self):
-#         files = glob.glob(f"{self.files_directory}/*.csv")
-#         files = [file.replace("\\", "/") for file in files]
-#         files = [s.split('/')[-1].split('.')[0] for s in files]  
-#         return files
-        
-#     def index_changed(self, i): 
-#         pass
-
-#     def text_changed(self, filename:str):
-#         print("Selected", filename)
-        
+import yfinance as yf
 
 class ToggleButton(Button):
     def __init__(self, ax, label):
@@ -236,15 +192,23 @@ def readBaseFile(basefilename:str):
     df = pd.read_csv(filepath, index_col=0, parse_dates=True)
     return df
 
-
-if __name__ == "__main__":
-    lf = getLatestDataFile()
-    print(lf)
-    print(lf.split('/')[-1])
-
-    low,high = getLowHighLimits(lf)
-    print(low, high)
+def getDF(qdate:QDate) -> pd.DataFrame:
+    ticker_symbol = "ES=F"
     
-    rlow, rhigh = getRoundedLowHighLimits(lf, 5)
-    print(rlow, rhigh)   
+    date_to_fetch = datetime.datetime(qdate.year(), qdate.month(), qdate.day())
+    end_date = date_to_fetch + datetime.timedelta(days=1)
+
+    try:
+        data = yf.download(ticker_symbol, start=date_to_fetch, end=end_date, interval="1m")
+        
+        if data.empty:
+            return None
+        else:
+            data.index = data.index.tz_localize(None)
+            data = data.between_time('9:30', '15:59')
+            df = data[['Open', 'High', 'Low', 'Close', 'Volume']]
+            return df
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
     

@@ -121,11 +121,6 @@ class BarPlotsFigure(QWidget):
             self.position_line = self.ax1.axhline(y=value, color='red', linestyle='-', linewidth=1.0)
         self.canvas.draw_idle()
             
-            
-            
-            
-        
-        
     def plotBar(self, bardf: pd.DataFrame):
         self.plotBarAxes(bardf, self.ax1)
     
@@ -251,7 +246,7 @@ class Buttons(QWidget):
         self.parent.nextBars(n)
         
 class BackTestWindow(QWidget):
-    def __init__(self, base_file_name:str):
+    def __init__(self, df:pd.DataFrame):
         super().__init__()
         self.value_per_point = 5
         self.current_price:float = None
@@ -261,7 +256,7 @@ class BackTestWindow(QWidget):
         
         self.net_value_held_shares = 0.0
         
-        self.df = utils.readBaseFile(basefilename=base_file_name)
+        self.df = df #utils.readBaseFile(basefilename=base_file_name)
         self.current_i = -1
         
         self.bars = pd.DataFrame()
@@ -440,5 +435,7 @@ class BackTestWindow(QWidget):
         
 if __name__ == '__main__':
     from backtest_main import BacktestProcess
-    BacktestProcess('20231130')
+    filepath = '/Users/ljp2/Data/20240110.csv'
+    df = pd.read_csv(filepath, index_col=0, parse_dates=True)
+    BacktestProcess(df)
         
