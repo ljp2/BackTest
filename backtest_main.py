@@ -13,41 +13,6 @@ from PyQt6.QtGui import QFont
 
 from backtestwindow import BackTestWindow
 import utils
-
-# class ChooseBacktestFile(QDialog):
-#     def __init__(self, parent):
-#         super().__init__()
-#         self.parent = parent
-#         layout = QVBoxLayout()
-        
-#         label = QLabel("")
-#         layout.addWidget(label)
-        
-#         self.calendar = QCalendarWidget(self)
-#         layout.addWidget(self.calendar)
-        
-#         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | 
-#             QDialogButtonBox.StandardButton.Cancel, self)
-#         buttons.accepted.connect(self.accept)
-#         buttons.rejected.connect(self.reject)
-#         layout.addWidget(buttons)
-
-#         self.setLayout(layout)
-        
-#     def accept(self) -> None:
-#         selected_date = self.calendar.selectedDate()
-#         print(selected_date, type(selected_date))
-#         valid_date = self.parent.selectedDate(selected_date)
-#         if valid_date:
-#             return super().accept()
-#         else:
-#             mdy = selected_date.toString("MMM dd, yyyy")
-#             msg = f"No Data Available for {mdy}"
-#             QMessageBox.information(None, "", msg)
-    
-#     def reject(self) -> None:
-#         self.parent.noDateSelected()
-#         return super().reject()
     
 
 def BacktestProcess(df:pd.DataFrame, selected_date:QDate):

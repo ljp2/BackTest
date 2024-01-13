@@ -55,44 +55,40 @@ class BarPlotsFigure(QWidget):
         self.x_right = self.df.index[-1]
         self.y_high = maxy + delta
         self.y_low = miny - delta
+
+
+        first_bar = self.df.iloc[0]
+        first_avg_hl = (first_bar['High'] + first_bar['Low']) / 2
+        
+
         
         self.width = (self.df.index[1] - self.df.index[0]) * 0.6
         self.width2 = self.width * 0.1
     
         (self.ax1, self.ax2, self.ax3) = self.figure.subplots(3, 1, sharex=True, sharey=True)
         self.figure.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95, hspace=0.2)
+
+        for ax in (self.ax1, self.ax2, self.ax3):
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+            ax.yaxis.tick_right()
+            ax.set_xlim(self.x_left, self.x_right)
+            ax.set_ylim(self.y_low, self.y_high)
+            ax.grid(True, linestyle='--', color='gray', alpha=0.7)         
         
         self.ax1.set_title("Candles")
-        self.ax1.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        self.ax1.yaxis.tick_right()
-        self.ax1.set_xlim(self.x_left, self.x_right)
-        self.ax1.set_ylim(self.y_low, self.y_high)
-        self.ax1.grid(True, linestyle='--', color='gray', alpha=0.7)
+        self.ax2.set_title("HA")
+        self.ax3.set_title("HAMA")
         self.draggable_lines_1 = DraggableLines(self.ax1, self.parent.getHorizLineCreateFlag)
         self.crosshair_1 = CrossHairCursor(self.ax1)
-        
-        self.ax2.set_title("HA")
-        self.ax2.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        self.ax2.yaxis.tick_right()
-        self.ax2.set_xlim(self.x_left, self.x_right)
-        self.ax2.set_ylim(self.y_low, self.y_high)
-        self.ax2.grid(True, linestyle='--', color='gray', alpha=0.7)
-        
-        self.ax3.set_title("HAMA")
-        self.ax3.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        self.ax3.yaxis.tick_right()
-        self.ax3.set_xlim(self.x_left, self.x_right)
-        self.ax3.set_ylim(self.y_low, self.y_high)
-        self.ax3.grid(True, linestyle='--', color='gray', alpha=0.7)
     
-        x = [self.x_right, self.x_right]
         x = [self.df.index[100], self.df.index[100]]
+        x = [self.x_left, self.x_left]
         y = [self.y_low, self.y_high]
         # self.vline1 = Line2D(x,y, color='red', linestyle='--', label='Cursor')
         # self.ax1.add_line(self.vline1)
-        self.vline2 = Line2D(x,y, color='red', linestyle='--', linewidth=0.5)
+        self.vline2 = Line2D(x,y, color='black', linestyle='--', linewidth=0.5)
         self.ax2.add_line(self.vline2)
-        self.vline3 = Line2D(x,y, color='red', linestyle='--', linewidth=0.5)
+        self.vline3 = Line2D(x,y, color='black', linestyle='--', linewidth=0.5)
         self.ax3.add_line(self.vline3)
     
         self.canvas.mpl_connect('motion_notify_event', self.update_line)
@@ -429,10 +425,3 @@ class BackTestWindow(QWidget):
         if event.key() == Qt.Key.Key_C:
             self.bar_plots.crosshair_1.toggle_crosshair()  
     
-        
-if __name__ == '__main__':
-    from backtest_main import BacktestProcess
-    filepath = '/Users/ljp2/Data/20240110.csv'
-    df = pd.read_csv(filepath, index_col=0, parse_dates=True)
-    BacktestProcess(df)
-        
