@@ -202,6 +202,8 @@ def getDF(qdate:QDate) -> pd.DataFrame:
         else:
             data.index = data.index.tz_localize(None)
             data = data.between_time('9:30', '15:59')
+            if data.empty:
+                return None
             df = data[['Open', 'High', 'Low', 'Close', 'Volume']]
             return df
     except Exception as e:
